@@ -300,7 +300,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ----------------- 2. DIRECT REGISTER (INSTANT FIREBASE DATABASE) -----------------
+// ----------------- 2. DIRECT REGISTER (REALTIME FIREBASE DATABASE) -----------------
 class DirectRegisterScreen extends StatefulWidget {
   @override
   _DirectRegisterScreenState createState() => _DirectRegisterScreenState();
@@ -531,4 +531,4 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Apna Naya Password Banayein", style: TextStyle(fontSize: 16, fon
+              Text("Apna Naya Password Banayein", style: TextStyle(fontSize: 16, fo
