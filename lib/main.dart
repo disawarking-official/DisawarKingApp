@@ -1445,7 +1445,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
       return;
     }
 
-    try {
+        try {
       await FirebaseFirestore.instance.collection('deposits').add({
         'userMobile': currentLoggedInUserMobile,
         'userName': currentLoggedInUserName,
@@ -1453,6 +1453,10 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
         'utr': _utr.text.trim(),
         'status': 'Pending Approval',
         'timestamp': FieldValue.serverTimestamp(),
+      });
+      // Database me balance permanent update karein:
+      await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).update({
+        'balance': FieldValue.increment(val),
       });
     } catch (_) {}
 
