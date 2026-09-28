@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -165,38 +166,39 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       var userDoc = await FirebaseFirestore.instance.collection('users').doc(mobile).get();
-      if (userDoc.exists) {
-        var data = userDoc.data()!;
-        if (data['password'] == pass) {
-          currentLoggedInUserMobile = mobile;
-          currentLoggedInUserName = data['name'] ?? "User";
-          userWalletBalance = (data['balance'] ?? 0).toDouble();
 
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => MainNavigationScreen()),
-          );
-          return;
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Galat Password!")));
-        }
-      } else {
-        // Fallback for demo login if no database record yet
-        currentLoggedInUserMobile = mobile;
-        currentLoggedInUserName = "Sheelu Bhartiya";
-        userWalletBalance = 500.0;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => MainNavigationScreen()),
+      // 1. Agar account bana hi nahi hai database me
+      if (!userDoc.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text("Aapka account nahi mila! Kripya pehle 'Register Now' par jakar account banayein."),
+          ),
         );
         return;
       }
-    } catch (e) {
+
+      // 2. Agar account hai lekin password galat hai
+      var data = userDoc.data()!;
+      if (data['password'] != pass) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat Password! Kripya sahi password dalein.")),
+        );
+        return;
+      }
+
+      // 3. Password aur Mobile dono sahi hone par hi andar le jayein
       currentLoggedInUserMobile = mobile;
-      currentLoggedInUserName = "Sheelu Bhartiya";
+      currentLoggedInUserName = data['name'] ?? "User";
+      userWalletBalance = (data['balance'] ?? 0).toDouble();
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => MainNavigationScreen()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.redAccent, content: Text("Internet ya Server error! Dobara try karein.")),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -1457,7 +1459,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 }
 
-// ----------------- 13. ADD MONEY (SAVES REQUEST TO FIREBASE) -----------------
+// ----------------- 13. ADD MONEY (QR CODE PAYMENT) -----------------
 class AddMoneyPaymentScreen extends StatefulWidget {
   @override
   _AddMoneyPaymentScreenState createState() => _AddMoneyPaymentScreenState();
@@ -1467,13 +1469,16 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   final _amount = TextEditingController();
   final _utr = TextEditingController();
 
+  // Real UPI link
+  final String upiPaymentData = "upi://pay?pa=9761630128@ybl&pn=DisawarKing&cu=INR";
+
   void _submitDeposit() async {
     double val = double.tryParse(_amount.text) ?? 0.0;
     if (val < 50) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Kam se kam Add Money ₹50 hai!")));
       return;
     }
-    if (_utr.text.length < 8) {
+    if (_utr.text.trim().length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Sahi UTR number dalein!")));
       return;
     }
@@ -1491,7 +1496,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
 
     userWalletBalance += val;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(backgroundColor: Colors.green, content: Text("₹$val Add Request Submitted! Admin check karke confirm karega.")),
+      SnackBar(backgroundColor: Colors.green, content: Text("₹$val Payment Request Bhej Di Gayi Hai!")),
     );
     Navigator.pop(context);
   }
@@ -1504,21 +1509,57 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
         padding: EdgeInsets.all(20),
         child: Container(
           padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(color: Color(0xFF1E293B), borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(
+            color: Color(0xFF1E293B),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.amber.withOpacity(0.2)),
+          ),
           child: Column(
             children: [
-              Text("UPI ID: 7409989270@upi", style: TextStyle(color: Color(0xFFF59E0B), fontSize: 16, fontWeight: FontWeight.bold)),
+              Text("Scan QR Code to Pay", style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 16)),
               SizedBox(height: 16),
+              
+              // Only pure QR container (No ID text displayed)
+              Container(
+                padding: EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4)),
+                  ],
+                ),
+                child: QrImageView(
+                  data: upiPaymentData,
+                  version: QrVersions.auto,
+                  size: 210.0,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+              SizedBox(height: 12),
+              Text("PhonePe / Google Pay / Paytm se scan karein", style: TextStyle(color: Colors.white60, fontSize: 12)),
+              SizedBox(height: 20),
+
               TextField(
                 controller: _amount,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: "Kitne Paise Transfer Kiye? (Min ₹50)", border: OutlineInputBorder()),
+                decoration: InputDecoration(
+                  labelText: "Kitne Paise Transfer Kiye? (Min ₹50)",
+                  filled: true,
+                  fillColor: Color(0xFF0F172A),
+                  border: OutlineInputBorder(),
+                ),
               ),
               SizedBox(height: 12),
               TextField(
                 controller: _utr,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: "12-Digit UTR Number", border: OutlineInputBorder()),
+                decoration: InputDecoration(
+                  labelText: "12-Digit UTR / Reference Number",
+                  filled: true,
+                  fillColor: Color(0xFF0F172A),
+                  border: OutlineInputBorder(),
+                ),
               ),
               SizedBox(height: 20),
               SizedBox(
@@ -1527,7 +1568,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFF59E0B)),
                   onPressed: _submitDeposit,
-                  child: Text("PAYMENT SUBMIT KAREIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  child: Text("PAYMENT SUBMIT KAREIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15)),
                 ),
               ),
             ],
