@@ -23,16 +23,17 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Create Android Structure
+      - name: Setup Android Project & Firebase Config
         run: |
-          # main.dart aur pubspec.yaml ka backup lete hain
           cp lib/main.dart /tmp/main.dart.bak
           cp pubspec.yaml /tmp/pubspec.yaml.bak
-          # Android environment ready karte hain
           flutter create . --platforms=android --org=com.disawarking.app --overwrite
-          # Hamara original code aur packages wapas daalte hain
           cp /tmp/main.dart.bak lib/main.dart
           cp /tmp/pubspec.yaml.bak pubspec.yaml
+          # Copy google-services.json to android/app if exists
+          if [ -f "google-services.json" ]; then
+            cp google-services.json android/app/
+          fi
 
       - name: Build Release APK
         run: |
