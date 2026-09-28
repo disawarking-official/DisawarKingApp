@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -137,7 +138,7 @@ Widget buildAppLogo() {
   );
 }
 
-// ----------------- 1. LOGIN SCREEN (STRICT DATABASE CHECK) -----------------
+// ----------------- 1. REALTIME LOGIN SCREEN -----------------
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -170,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.redAccent,
-            content: Text("Aapka account nahi mila! Kripya pehle 'Register Now' par jakar account banayein."),
+            content: Text("Aapka account nahi mila! Kripya pehle 'Register Now' par click karein."),
           ),
         );
         return;
@@ -179,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
       var data = userDoc.data()!;
       if (data['password'] != pass) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat Password! Sahi password dalein.")),
+          SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat Password! Kripya sahi password dalein.")),
         );
         return;
       }
@@ -194,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.redAccent, content: Text("Error: Kripya internet connection check karein.")),
+        SnackBar(backgroundColor: Colors.redAccent, content: Text("Server connect nahi hua! Error: $e")),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -254,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (c) => ForgotPasswordOtpScreen()));
+                            Navigator.push(context, MaterialPageRoute(builder: (c) => ForgotPasswordRealtimeOtpScreen()));
                           },
                           child: Text("Forgot Password?", style: TextStyle(color: Colors.amberAccent, fontSize: 13)),
                         ),
@@ -279,7 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (c) => RegisterOtpScreen()));
+                    Navigator.push(context, MaterialPageRoute(builder: (c) => SimpleDirectRegisterScreen()));
                   },
                   child: RichText(
                     text: TextSpan(
@@ -300,53 +301,48 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ----------------- 2. REGISTER SCREEN -----------------
-class RegisterOtpScreen extends StatefulWidget {
+// ----------------- 2. DIRECT REGISTER SCREEN (NO OTP - INSTANT REALTIME) -----------------
+class SimpleDirectRegisterScreen extends StatefulWidget {
   @override
-  _RegisterOtpScreenState createState() => _RegisterOtpScreenState();
+  _SimpleDirectRegisterScreenState createState() => _SimpleDirectRegisterScreenState();
 }
 
-class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
-  final _mobileController = TextEditingController();
-  final _otpController = TextEditingController();
+class _SimpleDirectRegisterScreenState extends State<SimpleDirectRegisterScreen> {
   final _nameController = TextEditingController();
+  final _mobileController = TextEditingController();
   final _passController = TextEditingController();
-
-  bool isOtpSent = false;
-  String generatedDemoOtp = "123456";
   bool _isSaving = false;
 
-  void _sendOtp() {
-    if (_mobileController.text.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("10 digit ka Mobile Number dalein")));
-      return;
-    }
-    setState(() => isOtpSent = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.green,
-        content: Text("OTP Sent! Demo OTP: $generatedDemoOtp"),
-        duration: Duration(seconds: 4),
-      ),
-    );
-  }
+  void _submitRegistration() async {
+    String name = _nameController.text.trim();
+    String mobile = _mobileController.text.trim();
+    String pass = _passController.text.trim();
 
-  void _verifyAndCreate() async {
-    if (_otpController.text != generatedDemoOtp) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Galat OTP! Kripya 123456 dalein.")));
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Aapka pura naam dalein!")));
       return;
     }
-    if (_nameController.text.trim().isEmpty || _passController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Naam aur Password dono bharein.")));
+    if (mobile.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("10 anko ka Mobile Number dalein!")));
+      return;
+    }
+    if (pass.length < 4) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password kam se kam 4 anko ka banayein!")));
       return;
     }
 
     setState(() => _isSaving = true);
-    String mobile = _mobileController.text.trim();
-    String name = _nameController.text.trim();
-    String pass = _passController.text.trim();
 
     try {
+      var checkUser = await FirebaseFirestore.instance.collection('users').doc(mobile).get();
+      if (checkUser.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.redAccent, content: Text("Yeh Mobile Number pehle se registered hai! Seedha Login karein.")),
+        );
+        setState(() => _isSaving = false);
+        return;
+      }
+
       await FirebaseFirestore.instance.collection('users').doc(mobile).set({
         'name': name,
         'mobile': mobile,
@@ -354,41 +350,42 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
         'balance': 0.0,
         'createdAt': FieldValue.serverTimestamp(),
       });
-    } catch (_) {}
 
-    currentLoggedInUserName = name;
-    currentLoggedInUserMobile = mobile;
-
-    setState(() => _isSaving = false);
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Color(0xFF1E293B),
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green),
-            SizedBox(width: 8),
-            Text("Registration Successful", style: TextStyle(color: Colors.white, fontSize: 16)),
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Color(0xFF1E293B),
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green),
+              SizedBox(width: 8),
+              Text("Registration Done", style: TextStyle(color: Colors.white, fontSize: 16)),
+            ],
+          ),
+          content: Text(
+            "Aapka account safalta se ban gaya hai!\n\nNaam: $name\nUser ID: $mobile\n\nAb login kijiye.",
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pop(context);
+              },
+              child: Text("Login Karein", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            )
           ],
         ),
-        content: Text(
-          "Aapka Account ban gaya hai!\n\nNaam: $currentLoggedInUserName\nUser ID: $currentLoggedInUserMobile",
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child: Text("Login Karein", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-          )
-        ],
-      ),
-    );
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.redAccent, content: Text("Registration fail: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -405,12 +402,26 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
             border: Border.all(color: Colors.amber.withOpacity(0.2)),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text("Naya Account Banayein", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amber)),
+              Text("Sirf naam, mobile number aur password bharein", style: TextStyle(color: Colors.white60, fontSize: 12)),
+              SizedBox(height: 18),
+              TextField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: "Aapka Pura Naam",
+                  prefixIcon: Icon(Icons.person, color: Colors.amber),
+                  filled: true,
+                  fillColor: Color(0xFF0F172A),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 14),
               TextField(
                 controller: _mobileController,
                 keyboardType: TextInputType.phone,
                 maxLength: 10,
-                enabled: !isOtpSent,
                 decoration: InputDecoration(
                   labelText: "Mobile Number",
                   prefixIcon: Icon(Icons.phone, color: Colors.amber),
@@ -420,67 +431,30 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 12),
-              if (!isOtpSent)
-                SizedBox(
-                  width: double.infinity,
-                  height: 46,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-                    onPressed: _sendOtp,
-                    child: Text("OTP Bhejo", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                  ),
+              SizedBox(height: 14),
+              TextField(
+                controller: _passController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Apna Password Banayein",
+                  prefixIcon: Icon(Icons.lock, color: Colors.amber),
+                  filled: true,
+                  fillColor: Color(0xFF0F172A),
+                  border: OutlineInputBorder(),
                 ),
-              if (isOtpSent) ...[
-                TextField(
-                  controller: _otpController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  decoration: InputDecoration(
-                    labelText: "Enter 6-Digit OTP (123456)",
-                    prefixIcon: Icon(Icons.security, color: Colors.amber),
-                    counterText: "",
-                    filled: true,
-                    fillColor: Color(0xFF0F172A),
-                    border: OutlineInputBorder(),
-                  ),
+              ),
+              SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                  onPressed: _isSaving ? null : _submitRegistration,
+                  child: _isSaving
+                      ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                      : Text("REGISTER KAREIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
-                SizedBox(height: 12),
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: "Aapka Pura Naam",
-                    prefixIcon: Icon(Icons.person, color: Colors.amber),
-                    filled: true,
-                    fillColor: Color(0xFF0F172A),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                SizedBox(height: 12),
-                TextField(
-                  controller: _passController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: "Apna Password Banayein",
-                    prefixIcon: Icon(Icons.lock, color: Colors.amber),
-                    filled: true,
-                    fillColor: Color(0xFF0F172A),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-                    onPressed: _isSaving ? null : _verifyAndCreate,
-                    child: _isSaving
-                        ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                        : Text("OTP Verify & ID Banayein", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ]
+              ),
             ],
           ),
         ),
@@ -489,60 +463,114 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
   }
 }
 
-// ----------------- 3. FORGOT PASSWORD SCREEN -----------------
-class ForgotPasswordOtpScreen extends StatefulWidget {
+// ----------------- 3. FORGOT PASSWORD (REALTIME SMS OTP) -----------------
+class ForgotPasswordRealtimeOtpScreen extends StatefulWidget {
   @override
-  _ForgotPasswordOtpScreenState createState() => _ForgotPasswordOtpScreenState();
+  _ForgotPasswordRealtimeOtpScreenState createState() => _ForgotPasswordRealtimeOtpScreenState();
 }
 
-class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
+class _ForgotPasswordRealtimeOtpScreenState extends State<ForgotPasswordRealtimeOtpScreen> {
   final _mobileController = TextEditingController();
   final _otpController = TextEditingController();
   final _newPassController = TextEditingController();
 
-  bool isOtpSent = false;
-  String demoOtp = "654321";
+  bool _isSendingOtp = false;
+  bool _otpSent = false;
+  String? _verificationId;
+  bool _isResetting = false;
 
-  void _sendOtp() {
-    if (_mobileController.text.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("10 anko ka Mobile Number dalein")));
-      return;
-    }
-    setState(() => isOtpSent = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(backgroundColor: Colors.green, content: Text("Reset OTP: $demoOtp")),
-    );
-  }
-
-  void _resetPassword() async {
-    if (_otpController.text != demoOtp) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Galat OTP enter kiya hai.")));
-      return;
-    }
-    if (_newPassController.text.length < 4) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password kam se kam 4 anko ka banayein.")));
-      return;
-    }
-
+  void _sendRealtimeOtp() async {
     String mobile = _mobileController.text.trim();
-    String newPass = _newPassController.text.trim();
+    if (mobile.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("10 anko ka Mobile Number dalein!")));
+      return;
+    }
+
+    setState(() => _isSendingOtp = true);
 
     try {
+      var checkUser = await FirebaseFirestore.instance.collection('users').doc(mobile).get();
+      if (!checkUser.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.redAccent, content: Text("Yeh number register nahi hai!")),
+        );
+        setState(() => _isSendingOtp = false);
+        return;
+      }
+
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: '+91$mobile',
+        verificationCompleted: (PhoneAuthCredential credential) async {},
+        verificationFailed: (FirebaseAuthException e) {
+          setState(() => _isSendingOtp = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(backgroundColor: Colors.redAccent, content: Text("SMS bhejne me error: ${e.message}")),
+          );
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          setState(() {
+            _verificationId = verificationId;
+            _otpSent = true;
+            _isSendingOtp = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(backgroundColor: Colors.green, content: Text("Aapke mobile par asli SMS OTP bhej diya gaya hai!")),
+          );
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          _verificationId = verificationId;
+        },
+      );
+    } catch (e) {
+      setState(() => _isSendingOtp = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
+
+  void _verifyAndResetPassword() async {
+    String smsCode = _otpController.text.trim();
+    String newPass = _newPassController.text.trim();
+
+    if (smsCode.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("6-digit ka SMS OTP dalein!")));
+      return;
+    }
+    if (newPass.length < 4) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password kam se kam 4 anko ka banayein!")));
+      return;
+    }
+
+    setState(() => _isResetting = true);
+
+    try {
+      PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: smsCode,
+      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      String mobile = _mobileController.text.trim();
       await FirebaseFirestore.instance.collection('users').doc(mobile).update({
         'password': newPass,
       });
-    } catch (_) {}
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(backgroundColor: Colors.green, content: Text("Password badal diya gaya! Ab Login karein.")),
-    );
-    Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.green, content: Text("Password badal diya gaya! Ab Login karein.")),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat OTP ya expired! Kripya sahi OTP dalein.")),
+      );
+    } finally {
+      if (mounted) setState(() => _isResetting = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Reset Password")),
+      appBar: AppBar(title: Text("Reset Password (SMS OTP)")),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(20),
         child: Container(
@@ -558,7 +586,7 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
                 controller: _mobileController,
                 keyboardType: TextInputType.phone,
                 maxLength: 10,
-                enabled: !isOtpSent,
+                enabled: !_otpSent,
                 decoration: InputDecoration(
                   labelText: "Registered Mobile Number",
                   prefixIcon: Icon(Icons.phone, color: Colors.amber),
@@ -568,24 +596,26 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 12),
-              if (!isOtpSent)
+              SizedBox(height: 14),
+              if (!_otpSent)
                 SizedBox(
                   width: double.infinity,
-                  height: 46,
+                  height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-                    onPressed: _sendOtp,
-                    child: Text("OTP Bhejo", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                    onPressed: _isSendingOtp ? null : _sendRealtimeOtp,
+                    child: _isSendingOtp
+                        ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                        : Text("SMS OTP BHEJO", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                   ),
                 ),
-              if (isOtpSent) ...[
+              if (_otpSent) ...[
                 TextField(
                   controller: _otpController,
                   keyboardType: TextInputType.number,
                   maxLength: 6,
                   decoration: InputDecoration(
-                    labelText: "Enter OTP ($demoOtp)",
+                    labelText: "Mobile par aaya 6-Digit OTP dalein",
                     prefixIcon: Icon(Icons.sms, color: Colors.amber),
                     counterText: "",
                     filled: true,
@@ -593,7 +623,7 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                SizedBox(height: 12),
+                SizedBox(height: 14),
                 TextField(
                   controller: _newPassController,
                   obscureText: true,
@@ -605,14 +635,16 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                SizedBox(height: 16),
+                SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-                    onPressed: _resetPassword,
-                    child: Text("Submit Naya Password", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                    onPressed: _isResetting ? null : _verifyAndResetPassword,
+                    child: _isResetting
+                        ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                        : Text("SUBMIT NAYA PASSWORD", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ]
@@ -1116,7 +1148,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
                 children: [
                   Expanded(
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisSize: dynamic,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text("Total Amount", style: TextStyle(color: Colors.white60, fontSize: 12)),
@@ -1455,7 +1487,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 }
 
-// ----------------- 13. ADD MONEY (PURE QR CODE SCANNER - NO DISPLAYED ID) -----------------
+// ----------------- 13. ADD MONEY SCREEN -----------------
 class AddMoneyPaymentScreen extends StatefulWidget {
   @override
   _AddMoneyPaymentScreenState createState() => _AddMoneyPaymentScreenState();
@@ -1465,7 +1497,6 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   final _amount = TextEditingController();
   final _utr = TextEditingController();
 
-  // Asli UPI Payment Link: 9761630128@ybl
   final String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay%3Fpa=9761630128@ybl%26pn=DisawarKing%26cu=INR";
 
   void _submitDeposit() async {
@@ -1514,8 +1545,6 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
             children: [
               Text("Scan QR Code to Pay", style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 16)),
               SizedBox(height: 16),
-              
-              // LIVE SCANNABLE QR CODE (Built-in Image, zero build-crash risk)
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -1723,7 +1752,7 @@ class MoreMenuScreen extends StatelessWidget {
             leading: Icon(Icons.lock_reset, color: Color(0xFFF59E0B)),
             title: Text("Change Password"),
             trailing: Icon(Icons.arrow_forward_ios, size: 14),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => ForgotPasswordOtpScreen())),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => ForgotPasswordRealtimeOtpScreen())),
           ),
           ListTile(
             leading: Icon(Icons.share, color: Color(0xFFF59E0B)),
@@ -1885,7 +1914,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
           ),
           _ruleCard(
             title: "Rates & Deposit Limit",
-            text: "• कम से कम ADD MONEY: ₹50 है |\n• JODI RATE: 10 का 950 ₹\n• HARUFF RATE: 10 ka 95 ₹",
+            text: "• कम से कम ADD MONEY: ₹50 है |\n• JODI RATE: 10 का 950 ₹\n• HARUFF RATE: 10 का 95 ₹",
           ),
           _ruleCard(
             title: "Share & Earn Commission",
