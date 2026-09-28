@@ -23,11 +23,7 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Setup Android Skeleton
-        run: |
-          flutter create . --platforms=android --org=com.gameofsatta.app --overwrite
-
-      - name: Build APK
+      - name: Build Release APK
         run: |
           flutter pub get
           flutter build apk --release
