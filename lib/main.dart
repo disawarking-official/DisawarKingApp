@@ -21,14 +21,14 @@ class DisawarKingApp extends StatelessWidget {
       title: 'DisawarKingApp',
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: Color(0xFF0F172A),
-        primaryColor: Color(0xFFF59E0B),
-        colorScheme: ColorScheme.dark(
+        scaffoldBackgroundColor: const Color(0xFF0F172A),
+        primaryColor: const Color(0xFFF59E0B),
+        colorScheme: const ColorScheme.dark(
           primary: Color(0xFFF59E0B),
           secondary: Color(0xFFD97706),
           surface: Color(0xFF1E293B),
         ),
-        appBarTheme: AppBarTheme(
+        appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF1E293B),
           elevation: 2,
           centerTitle: true,
@@ -45,7 +45,7 @@ class DisawarKingApp extends StatelessWidget {
 double userWalletBalance = 0.0;
 String currentLoggedInUserMobile = "";
 String currentLoggedInUserName = "";
-final String officialWhatsAppNumber = "917409989270";
+const String officialWhatsAppNumber = "917409989270";
 
 class MarketConfig {
   final String name;
@@ -68,7 +68,7 @@ class MarketConfig {
     DateTime now = DateTime.now();
     DateTime closeTime = DateTime(now.year, now.month, now.day, closeHour, closeMin);
     if (closeHour < 6 && now.hour >= 6) {
-      closeTime = closeTime.add(Duration(days: 1));
+      closeTime = closeTime.add(const Duration(days: 1));
     }
     return now.isBefore(closeTime);
   }
@@ -77,7 +77,7 @@ class MarketConfig {
     DateTime now = DateTime.now();
     DateTime closeTime = DateTime(now.year, now.month, now.day, closeHour, closeMin);
     if (closeHour < 6 && now.hour >= 6) {
-      closeTime = closeTime.add(Duration(days: 1));
+      closeTime = closeTime.add(const Duration(days: 1));
     }
     Duration diff = closeTime.difference(now);
     return diff.inMinutes > 0 && diff.inMinutes <= 120;
@@ -108,10 +108,10 @@ Widget buildAppLogo() {
     mainAxisSize: MainAxisSize.min,
     children: [
       Container(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             colors: [Color(0xFFFBBF24), Color(0xFFD97706)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -120,10 +120,10 @@ Widget buildAppLogo() {
             BoxShadow(color: Colors.amber.withOpacity(0.3), blurRadius: 18, spreadRadius: 2),
           ],
         ),
-        child: Icon(Icons.workspace_premium, size: 50, color: Color(0xFF0F172A)),
+        child: const Icon(Icons.workspace_premium, size: 50, color: Color(0xFF0F172A)),
       ),
-      SizedBox(height: 10),
-      Text(
+      const SizedBox(height: 10),
+      const Text(
         "DisawarKingApp",
         style: TextStyle(
           color: Color(0xFFF59E0B),
@@ -132,7 +132,7 @@ Widget buildAppLogo() {
           letterSpacing: 1.2,
         ),
       ),
-      Text("Official Gaming Platform", style: TextStyle(color: Colors.white70, fontSize: 12)),
+      const Text("Official Gaming Platform", style: TextStyle(color: Colors.white70, fontSize: 12)),
     ],
   );
 }
@@ -153,11 +153,11 @@ class _LoginScreenState extends State<LoginScreen> {
     String pass = _passwordController.text.trim();
 
     if (mobile.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("10 anko ka Mobile Number dalein!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("10 anko ka Mobile Number dalein!")));
       return;
     }
     if (pass.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password dalein!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Password dalein!")));
       return;
     }
 
@@ -168,9 +168,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             backgroundColor: Colors.redAccent,
-            content: Text("Aapka account nahi mila! Kripya pehle 'Register Now' par click karein."),
+            content: Text("Aapka account nahi mila! Pehle 'Register Now' par click karein."),
           ),
         );
         return;
@@ -179,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
       var data = userDoc.data()!;
       if (data['password'] != pass) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat Password! Sahi password dalein.")),
+          const SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat Password! Sahi password dalein.")),
         );
         return;
       }
@@ -194,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.redAccent, content: Text("Internet ya Server error! Dobara check karein.")),
+        const SnackBar(backgroundColor: Colors.redAccent, content: Text("Internet ya Server error! Dobara check karein.")),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -207,46 +207,46 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
             child: Column(
               children: [
                 buildAppLogo(),
-                SizedBox(height: 25),
+                const SizedBox(height: 25),
                 Container(
-                  padding: EdgeInsets.all(22),
+                  padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
-                    color: Color(0xFF1E293B),
+                    color: const Color(0xFF1E293B),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.amber.withOpacity(0.25)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Login", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.amber)),
-                      Text("Apne Mobile Number se Login karein", style: TextStyle(color: Colors.white60, fontSize: 13)),
-                      SizedBox(height: 16),
+                      const Text("Login", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.amber)),
+                      const Text("Apne Mobile Number se Login karein", style: TextStyle(color: Colors.white60, fontSize: 13)),
+                      const SizedBox(height: 16),
                       TextField(
                         controller: _mobileController,
                         keyboardType: TextInputType.phone,
                         maxLength: 10,
                         decoration: InputDecoration(
-                          prefixIcon: Icon(Icons.phone_android, color: Colors.amber),
+                          prefixIcon: const Icon(Icons.phone_android, color: Colors.amber),
                           hintText: "Mobile Number",
                           counterText: "",
                           filled: true,
-                          fillColor: Color(0xFF0F172A),
+                          fillColor: const Color(0xFF0F172A),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       TextField(
                         controller: _passwordController,
                         obscureText: true,
                         decoration: InputDecoration(
-                          prefixIcon: Icon(Icons.lock_outline, color: Colors.amber),
+                          prefixIcon: const Icon(Icons.lock_outline, color: Colors.amber),
                           hintText: "Password",
                           filled: true,
-                          fillColor: Color(0xFF0F172A),
+                          fillColor: const Color(0xFF0F172A),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
@@ -256,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () {
                             Navigator.push(context, MaterialPageRoute(builder: (c) => DirectResetPasswordScreen()));
                           },
-                          child: Text("Forgot Password?", style: TextStyle(color: Colors.amberAccent, fontSize: 13)),
+                          child: const Text("Forgot Password?", style: TextStyle(color: Colors.amberAccent, fontSize: 13)),
                         ),
                       ),
                       SizedBox(
@@ -264,25 +264,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 48,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFF59E0B),
+                            backgroundColor: const Color(0xFFF59E0B),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
                           onPressed: _isLoading ? null : _login,
                           child: _isLoading
-                              ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                              : Text("LOGIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                              : const Text("LOGIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
                         ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (c) => DirectRegisterScreen()));
                   },
                   child: RichText(
-                    text: TextSpan(
+                    text: const TextSpan(
                       text: "Naya Account banayein? ",
                       style: TextStyle(color: Colors.white70),
                       children: [
@@ -300,7 +300,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ----------------- 2. DIRECT REGISTER (REALTIME FIREBASE DATABASE) -----------------
+// ----------------- 2. DIRECT REGISTER -----------------
 class DirectRegisterScreen extends StatefulWidget {
   @override
   _DirectRegisterScreenState createState() => _DirectRegisterScreenState();
@@ -318,15 +318,15 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
     String pass = _passController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Aapka pura naam dalein!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Aapka pura naam dalein!")));
       return;
     }
     if (mobile.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("10 anko ka Mobile Number dalein!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("10 anko ka Mobile Number dalein!")));
       return;
     }
     if (pass.length < 4) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password kam se kam 4 anko ka banayein!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Password kam se kam 4 anko ka banayein!")));
       return;
     }
 
@@ -336,7 +336,7 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
       var checkUser = await FirebaseFirestore.instance.collection('users').doc(mobile).get();
       if (checkUser.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.redAccent, content: Text("Yeh Mobile pehle se registered hai! Seedha Login karein.")),
+          const SnackBar(backgroundColor: Colors.redAccent, content: Text("Yeh Mobile pehle se registered hai! Seedha Login karein.")),
         );
         setState(() => _isSaving = false);
         return;
@@ -354,8 +354,8 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          backgroundColor: Color(0xFF1E293B),
-          title: Row(
+          backgroundColor: const Color(0xFF1E293B),
+          title: const Row(
             children: [
               Icon(Icons.check_circle, color: Colors.green),
               SizedBox(width: 8),
@@ -363,8 +363,8 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
             ],
           ),
           content: Text(
-            "Account Safalta se ban gaya hai!\n\nNaam: $name\nUser ID: $mobile\n\nAb login karein.",
-            style: TextStyle(color: Colors.white70),
+            "Account ban gaya hai!\n\nNaam: $name\nUser ID: $mobile\n\nAb login karein.",
+            style: const TextStyle(color: Colors.white70),
           ),
           actions: [
             ElevatedButton(
@@ -373,7 +373,7 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
                 Navigator.pop(ctx);
                 Navigator.pop(context);
               },
-              child: Text("Login Karein", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              child: const Text("Login Karein", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
             )
           ],
         ),
@@ -390,25 +390,25 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Naya Account Register")),
+      appBar: AppBar(title: const Text("Naya Account Register")),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Container(
-          padding: EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Color(0xFF1E293B),
+            color: const Color(0xFF1E293B),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.amber.withOpacity(0.2)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Naya Account Banayein", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amber)),
-              Text("Naam, Mobile aur Password bharein", style: TextStyle(color: Colors.white60, fontSize: 12)),
-              SizedBox(height: 18),
+              const Text("Naya Account Banayein", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amber)),
+              const Text("Naam, Mobile aur Password bharein", style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const SizedBox(height: 18),
               TextField(
                 controller: _nameController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Aapka Pura Naam",
                   prefixIcon: Icon(Icons.person, color: Colors.amber),
                   filled: true,
@@ -416,12 +416,12 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               TextField(
                 controller: _mobileController,
                 keyboardType: TextInputType.phone,
                 maxLength: 10,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Mobile Number",
                   prefixIcon: Icon(Icons.phone, color: Colors.amber),
                   counterText: "",
@@ -430,11 +430,11 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               TextField(
                 controller: _passController,
                 obscureText: true,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Apna Password Banayein",
                   prefixIcon: Icon(Icons.lock, color: Colors.amber),
                   filled: true,
@@ -442,7 +442,7 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 22),
+              const SizedBox(height: 22),
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -450,8 +450,8 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
                   onPressed: _isSaving ? null : _submitRegistration,
                   child: _isSaving
-                      ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                      : Text("REGISTER KAREIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                      : const Text("REGISTER KAREIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
             ],
@@ -462,7 +462,7 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
   }
 }
 
-// ----------------- 3. FORGOT PASSWORD (DATABASE RESET) -----------------
+// ----------------- 3. FORGOT PASSWORD -----------------
 class DirectResetPasswordScreen extends StatefulWidget {
   @override
   _DirectResetPasswordScreenState createState() => _DirectResetPasswordScreenState();
@@ -478,11 +478,11 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
     String newPass = _newPassController.text.trim();
 
     if (mobile.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("10 anko ka Mobile Number dalein!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("10 anko ka Mobile Number dalein!")));
       return;
     }
     if (newPass.length < 4) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Naya Password kam se kam 4 anko ka ho!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Naya Password kam se kam 4 anko ka ho!")));
       return;
     }
 
@@ -492,7 +492,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
       var userDoc = await FirebaseFirestore.instance.collection('users').doc(mobile).get();
       if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.redAccent, content: Text("Yeh Mobile registered nahi hai! Pehle account banayein.")),
+          const SnackBar(backgroundColor: Colors.redAccent, content: Text("Yeh Mobile registered nahi hai! Pehle account banayein.")),
         );
         setState(() => _isLoading = false);
         return;
@@ -503,7 +503,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.green, content: Text("Password Safalta se Badal Diya Gaya! Ab Login karein.")),
+        const SnackBar(backgroundColor: Colors.green, content: Text("Password Safalta se Badal Diya Gaya! Ab Login karein.")),
       );
       Navigator.pop(context);
     } catch (e) {
@@ -518,17 +518,10 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Reset Password")),
+      appBar: AppBar(title: const Text("Reset Password")),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Container(
-          padding: EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.amber.withOpacity(0.2)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Apna Naya Password Banayein", style: TextStyle(fontSize: 16, fo
+            color: const Color(0xFF1E2
