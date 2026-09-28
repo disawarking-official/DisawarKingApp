@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1015457895217",
+    "project_id": "disawarking-ead58",
+    "storage_bucket": "disawarking-ead58.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1015457895217:android:09cb8d98e56cc50b359610",
+        "android_client_info": {
+          "package_name": "com.disawarking.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAF1_OH3Szs8--OcwxHA11Fsj5x-iGSPIA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
