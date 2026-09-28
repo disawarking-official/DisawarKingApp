@@ -17,7 +17,7 @@ class DisawarKingApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCosModeBanner: false,
+      debugShowCheckedModeBanner: false,
       title: 'DisawarKingApp',
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -194,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.redAccent, content: Text("Internet ya Server me samasya hai. Dobara check karein.")),
+        SnackBar(backgroundColor: Colors.redAccent, content: Text("Internet ya Server error! Dobara check karein.")),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -300,7 +300,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ----------------- 2. DIRECT REGISTER (REALTIME FIREBASE DATABASE) -----------------
+// ----------------- 2. DIRECT REGISTER (INSTANT FIREBASE DATABASE) -----------------
 class DirectRegisterScreen extends StatefulWidget {
   @override
   _DirectRegisterScreenState createState() => _DirectRegisterScreenState();
@@ -462,7 +462,7 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
   }
 }
 
-// ----------------- 3. FORGOT PASSWORD (DATABASE VERIFIED RESET) -----------------
+// ----------------- 3. FORGOT PASSWORD (DATABASE RESET) -----------------
 class DirectResetPasswordScreen extends StatefulWidget {
   @override
   _DirectResetPasswordScreenState createState() => _DirectResetPasswordScreenState();
@@ -531,4 +531,4 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Apna Naya Password Banayein", style: TextStyle(fo
+              Text("Apna Naya Password Banayein", style: TextStyle(fontSize: 16, fon
