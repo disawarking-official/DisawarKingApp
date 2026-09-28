@@ -30,18 +30,17 @@ jobs:
           flutter create . --platforms=android --org=com.disawarking.app --overwrite
           cp /tmp/main.dart.bak lib/main.dart
           cp /tmp/pubspec.yaml.bak pubspec.yaml
-          # Copy google-services.json to android/app if exists
           if [ -f "google-services.json" ]; then
             cp google-services.json android/app/
           fi
 
-      - name: Build Release APK
+      - name: Build Split Release APK
         run: |
           flutter pub get
-          flutter build apk --release
+          flutter build apk --release --split-per-abi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: DisawarKing-App
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
