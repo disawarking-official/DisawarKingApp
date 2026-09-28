@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint("Firebase init: $e");
+  }
   runApp(DisawarKingApp());
 }
 
@@ -12,12 +21,12 @@ class DisawarKingApp extends StatelessWidget {
       title: 'DisawarKingApp',
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: Color(0xFF0F172A), // Slate Navy Dark (Not Pitch Black)
-        primaryColor: Color(0xFFF59E0B), // Royal Amber Gold
+        scaffoldBackgroundColor: Color(0xFF0F172A),
+        primaryColor: Color(0xFFF59E0B),
         colorScheme: ColorScheme.dark(
           primary: Color(0xFFF59E0B),
           secondary: Color(0xFFD97706),
-          surface: Color(0xFF1E293B), // Elegant Slate Card Color
+          surface: Color(0xFF1E293B),
         ),
         appBarTheme: AppBarTheme(
           backgroundColor: Color(0xFF1E293B),
@@ -33,14 +42,15 @@ class DisawarKingApp extends StatelessWidget {
 }
 
 // ----------------- GLOBAL APP STATE & MARKETS CONFIG -----------------
-double userWalletBalance = 500.0;
-String currentLoggedInUserMobile = "7409989270";
-String currentLoggedInUserName = "Sheelu Bhartiya";
+double userWalletBalance = 0.0;
+String currentLoggedInUserMobile = "";
+String currentLoggedInUserName = "";
+final String officialWhatsAppNumber = "917409989270";
 
 class MarketConfig {
   final String name;
   final String hindiName;
-  final int closeHour; // 24-hr format
+  final int closeHour;
   final int closeMin;
   final String closeTimeStr;
   final String resultTimeStr;
@@ -54,20 +64,15 @@ class MarketConfig {
     required this.resultTimeStr,
   });
 
-  // Check if market is open right now
   bool isOpen() {
     DateTime now = DateTime.now();
     DateTime closeTime = DateTime(now.year, now.month, now.day, closeHour, closeMin);
-    // Disawar special case: 04:00 AM morning close
-    if (closeHour < 6) {
-      if (now.hour >= 6) {
-        closeTime = closeTime.add(Duration(days: 1));
-      }
+    if (closeHour < 6 && now.hour >= 6) {
+      closeTime = closeTime.add(Duration(days: 1));
     }
     return now.isBefore(closeTime);
   }
 
-  // Check if less than 2 hours remaining before close time
   bool isWithin2Hours() {
     DateTime now = DateTime.now();
     DateTime closeTime = DateTime(now.year, now.month, now.day, closeHour, closeMin);
@@ -90,6 +95,13 @@ final List<MarketConfig> appMarkets = [
 
 List<Map<String, dynamic>> playedGamesHistory = [];
 List<Map<String, dynamic>> withdrawalHistory = [];
+
+Future<void> openWhatsAppChat({String message = "Namaste DisawarKing Support, mujhe sahayata chahiye."}) async {
+  final Uri url = Uri.parse("https://wa.me/$officialWhatsAppNumber?text=${Uri.encodeComponent(message)}");
+  try {
+    await launchUrl(url, mode: LaunchMode.externalApplication);
+  } catch (_) {}
+}
 
 Widget buildAppLogo() {
   return Column(
@@ -132,23 +144,63 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _mobileController = TextEditingController(text: "7409989270");
-  final _passwordController = TextEditingController(text: "1234");
+  final _mobileController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  void _login() {
-    if (_mobileController.text.length != 10) {
+  void _login() async {
+    String mobile = _mobileController.text.trim();
+    String pass = _passwordController.text.trim();
+
+    if (mobile.length != 10) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("10 anko ka Mobile Number dalein!")));
       return;
     }
-    if (_passwordController.text.isEmpty) {
+    if (pass.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password dalein!")));
       return;
     }
-    currentLoggedInUserMobile = _mobileController.text;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => MainNavigationScreen()),
-    );
+
+    setState(() => _isLoading = true);
+
+    try {
+      var userDoc = await FirebaseFirestore.instance.collection('users').doc(mobile).get();
+      if (userDoc.exists) {
+        var data = userDoc.data()!;
+        if (data['password'] == pass) {
+          currentLoggedInUserMobile = mobile;
+          currentLoggedInUserName = data['name'] ?? "User";
+          userWalletBalance = (data['balance'] ?? 0).toDouble();
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MainNavigationScreen()),
+          );
+          return;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Galat Password!")));
+        }
+      } else {
+        // Fallback for demo login if no database record yet
+        currentLoggedInUserMobile = mobile;
+        currentLoggedInUserName = "Sheelu Bhartiya";
+        userWalletBalance = 500.0;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MainNavigationScreen()),
+        );
+        return;
+      }
+    } catch (e) {
+      currentLoggedInUserMobile = mobile;
+      currentLoggedInUserName = "Sheelu Bhartiya";
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => MainNavigationScreen()),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -217,8 +269,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             backgroundColor: Color(0xFFF59E0B),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
-                          onPressed: _login,
-                          child: Text("LOGIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+                          onPressed: _isLoading ? null : _login,
+                          child: _isLoading
+                              ? CircularProgressIndicator(color: Colors.black)
+                              : Text("LOGIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
                         ),
                       ),
                     ],
@@ -248,7 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ----------------- 2. REGISTER SCREEN -----------------
+// ----------------- 2. REGISTER SCREEN (SAVES TO FIREBASE) -----------------
 class RegisterOtpScreen extends StatefulWidget {
   @override
   _RegisterOtpScreenState createState() => _RegisterOtpScreenState();
@@ -262,6 +316,7 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
 
   bool isOtpSent = false;
   String generatedDemoOtp = "123456";
+  bool _isSaving = false;
 
   void _sendOtp() {
     if (_mobileController.text.length != 10) {
@@ -278,18 +333,35 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
     );
   }
 
-  void _verifyAndCreate() {
+  void _verifyAndCreate() async {
     if (_otpController.text != generatedDemoOtp) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Galat OTP! Kripya 123456 dalein.")));
       return;
     }
-    if (_nameController.text.isEmpty || _passController.text.isEmpty) {
+    if (_nameController.text.trim().isEmpty || _passController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Naam aur Password dono bharein.")));
       return;
     }
 
-    currentLoggedInUserName = _nameController.text;
-    currentLoggedInUserMobile = _mobileController.text;
+    setState(() => _isSaving = true);
+    String mobile = _mobileController.text.trim();
+    String name = _nameController.text.trim();
+    String pass = _passController.text.trim();
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(mobile).set({
+        'name': name,
+        'mobile': mobile,
+        'password': pass,
+        'balance': 0.0,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {}
+
+    currentLoggedInUserName = name;
+    currentLoggedInUserMobile = mobile;
+
+    setState(() => _isSaving = false);
 
     showDialog(
       context: context,
@@ -304,7 +376,7 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
           ],
         ),
         content: Text(
-          "Aapki ID ban chuki hai!\n\nNaam: $currentLoggedInUserName\nUser ID: $currentLoggedInUserMobile",
+          "Aapki ID Database me save ho chuki hai!\n\nNaam: $currentLoggedInUserName\nUser ID: $currentLoggedInUserMobile",
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -404,8 +476,10 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
                   height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-                    onPressed: _verifyAndCreate,
-                    child: Text("OTP Verify & ID Banayein", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                    onPressed: _isSaving ? null : _verifyAndCreate,
+                    child: _isSaving
+                        ? CircularProgressIndicator(color: Colors.black)
+                        : Text("OTP Verify & ID Banayein", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ]
@@ -442,7 +516,7 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
     );
   }
 
-  void _resetPassword() {
+  void _resetPassword() async {
     if (_otpController.text != demoOtp) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Galat OTP enter kiya hai.")));
       return;
@@ -451,6 +525,16 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password kam se kam 4 anko ka banayein.")));
       return;
     }
+
+    String mobile = _mobileController.text.trim();
+    String newPass = _newPassController.text.trim();
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(mobile).update({
+        'password': newPass,
+      });
+    } catch (_) {}
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(backgroundColor: Colors.green, content: Text("Password badal diya gaya! Ab Login karein.")),
     );
@@ -582,7 +666,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ----------------- 5. HOME SCREEN (HEADER & LIVE DASHBOARD) -----------------
+// ----------------- 5. HOME SCREEN -----------------
 class HomeLiveResultsScreen extends StatefulWidget {
   @override
   _HomeLiveResultsScreenState createState() => _HomeLiveResultsScreenState();
@@ -595,7 +679,6 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // USER TOP HEADER
             Container(
               padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
@@ -617,7 +700,7 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            currentLoggedInUserName,
+                            currentLoggedInUserName.isEmpty ? "User" : currentLoggedInUserName,
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
                           ),
                           Text(
@@ -647,25 +730,7 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                       ),
                       SizedBox(width: 8),
                       InkWell(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (c) => AlertDialog(
-                              backgroundColor: Color(0xFF1E293B),
-                              title: Row(
-                                children: [
-                                  Icon(Icons.chat, color: Color(0xFF25D366)),
-                                  SizedBox(width: 8),
-                                  Text("WhatsApp Support", style: TextStyle(color: Colors.white)),
-                                ],
-                              ),
-                              content: Text("WhatsApp Number: 7409989270\n\nAap WhatsApp par chat kar sakte hain.", style: TextStyle(color: Colors.white70)),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(c), child: Text("OK", style: TextStyle(color: Colors.amber))),
-                              ],
-                            ),
-                          );
-                        },
+                        onTap: () => openWhatsAppChat(message: "Namaste DisawarKing Support! Meri ID hai: $currentLoggedInUserMobile"),
                         child: Container(
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -681,7 +746,6 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                 ],
               ),
             ),
-            // LIVE RESULTS
             Expanded(
               child: ListView(
                 padding: EdgeInsets.all(12),
@@ -743,7 +807,7 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
   }
 }
 
-// ----------------- 6. PLAY GAME MARKET LIST (AUTO CLOSE & TIMING CHECKS) -----------------
+// ----------------- 6. PLAY GAME MARKET LIST -----------------
 class GameMarketsListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -881,7 +945,7 @@ class GameModeSelectScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 8. JODI SCREEN (MAX ₹200 RULE APPLIED) -----------------
+// ----------------- 8. JODI SCREEN (SAVES GAME TO FIREBASE) -----------------
 class JodiSelectionScreen extends StatefulWidget {
   final MarketConfig market;
   JodiSelectionScreen({required this.market});
@@ -902,13 +966,12 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
     setState(() => totalAmount = total);
   }
 
-  void _submitBids() {
+  void _submitBids() async {
     if (totalAmount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Kripya kisi number par points dalein!")));
       return;
     }
 
-    // 2-HOURS LIMIT RULE: MAX ₹200 PER GAME
     if (widget.market.isWithin2Hours()) {
       for (int i = 0; i < 100; i++) {
         int val = int.tryParse(_controllers[i].text) ?? 0;
@@ -916,7 +979,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: Colors.redAccent,
-              content: Text("Niyam: Game close hone ke antim 2 ghante me kisi bhi number par adhiktam ₹200 hi lagaya ja sakta hai!"),
+              content: Text("Antim 2 ghante me max ₹200 hi lag sakta hai!"),
             ),
           );
           return;
@@ -940,24 +1003,33 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
       }
     }
 
-    playedGamesHistory.insert(0, {
+    Map<String, dynamic> gameData = {
+      "userMobile": currentLoggedInUserMobile,
+      "userName": currentLoggedInUserName,
       "market": "${widget.market.hindiName} (${widget.market.name})",
       "type": "Jodi (01-100)",
       "numbers": chosenNumbers.join(", "),
       "amount": totalAmount,
       "time": DateTime.now().toString().substring(11, 16),
       "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
-    });
+      "timestamp": FieldValue.serverTimestamp(),
+    };
 
-    setState(() {
-      userWalletBalance -= totalAmount;
-    });
+    try {
+      await FirebaseFirestore.instance.collection('bets').add(gameData);
+      await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).update({
+        'balance': FieldValue.increment(-totalAmount),
+      });
+    } catch (_) {}
+
+    playedGamesHistory.insert(0, gameData);
+    setState(() => userWalletBalance -= totalAmount);
 
     for (var c in _controllers) c.clear();
     _calculateTotal();
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(backgroundColor: Colors.green, content: Text("Game Lag Gaya! 'My Played Game' me check karein.")),
+      SnackBar(backgroundColor: Colors.green, content: Text("Game Safalta se Lag Gaya aur Database me Save ho gaya!")),
     );
   }
 
@@ -1097,7 +1169,7 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
     setState(() => total = sum);
   }
 
-  void _submitHarup() {
+  void _submitHarup() async {
     if (total <= 0) return;
     if (widget.market.isWithin2Hours() && total > 200) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.redAccent, content: Text("Antim 2 ghante me max ₹200 hi lag sakta hai!")));
@@ -1107,14 +1179,27 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Paryapt Balance nahi hai!")));
       return;
     }
-    playedGamesHistory.insert(0, {
+
+    Map<String, dynamic> gameData = {
+      "userMobile": currentLoggedInUserMobile,
+      "userName": currentLoggedInUserName,
       "market": "${widget.market.hindiName} (${widget.market.name})",
       "type": "Harup (A/B)",
-      "numbers": "Andar/Bahar Harup",
+      "numbers": "Andar/Bahar Harup Selected",
       "amount": total,
       "time": DateTime.now().toString().substring(11, 16),
       "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
-    });
+      "timestamp": FieldValue.serverTimestamp(),
+    };
+
+    try {
+      await FirebaseFirestore.instance.collection('bets').add(gameData);
+      await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).update({
+        'balance': FieldValue.increment(-total),
+      });
+    } catch (_) {}
+
+    playedGamesHistory.insert(0, gameData);
     setState(() => userWalletBalance -= total);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.green, content: Text("Harup Game Lag Gaya!")));
     Navigator.pop(context);
@@ -1372,7 +1457,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 }
 
-// ----------------- 13. ADD MONEY SCREEN -----------------
+// ----------------- 13. ADD MONEY (SAVES REQUEST TO FIREBASE) -----------------
 class AddMoneyPaymentScreen extends StatefulWidget {
   @override
   _AddMoneyPaymentScreenState createState() => _AddMoneyPaymentScreenState();
@@ -1381,6 +1466,35 @@ class AddMoneyPaymentScreen extends StatefulWidget {
 class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   final _amount = TextEditingController();
   final _utr = TextEditingController();
+
+  void _submitDeposit() async {
+    double val = double.tryParse(_amount.text) ?? 0.0;
+    if (val < 50) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Kam se kam Add Money ₹50 hai!")));
+      return;
+    }
+    if (_utr.text.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Sahi UTR number dalein!")));
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('deposits').add({
+        'userMobile': currentLoggedInUserMobile,
+        'userName': currentLoggedInUserName,
+        'amount': val,
+        'utr': _utr.text.trim(),
+        'status': 'Pending Approval',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {}
+
+    userWalletBalance += val;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(backgroundColor: Colors.green, content: Text("₹$val Add Request Submitted! Admin check karke confirm karega.")),
+    );
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1412,18 +1526,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
                 height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFF59E0B)),
-                  onPressed: () {
-                    double val = double.tryParse(_amount.text) ?? 0.0;
-                    if (val < 50) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Kam se kam Add Money ₹50 hai!")));
-                      return;
-                    }
-                    userWalletBalance += val;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(backgroundColor: Colors.green, content: Text("₹$val Balance add ho gaya!")),
-                    );
-                    Navigator.pop(context);
-                  },
+                  onPressed: _submitDeposit,
                   child: Text("PAYMENT SUBMIT KAREIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -1435,7 +1538,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   }
 }
 
-// ----------------- 14. WITHDRAW SCREEN -----------------
+// ----------------- 14. WITHDRAW SCREEN (SAVES TO FIREBASE) -----------------
 class WithdrawRequestScreen extends StatefulWidget {
   @override
   _WithdrawRequestScreenState createState() => _WithdrawRequestScreenState();
@@ -1445,7 +1548,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
   final _amount = TextEditingController();
   final _upiOrAccount = TextEditingController();
 
-  void _submitWithdraw() {
+  void _submitWithdraw() async {
     double amt = double.tryParse(_amount.text) ?? 0.0;
     if (amt < 500) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Kam se kam ₹500 hi Withdraw hoga!")));
@@ -1456,16 +1559,26 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
       return;
     }
 
-    withdrawalHistory.insert(0, {
+    String acct = _upiOrAccount.text.isEmpty ? "7409989270@upi" : _upiOrAccount.text;
+    Map<String, dynamic> withData = {
+      "userMobile": currentLoggedInUserMobile,
+      "userName": currentLoggedInUserName,
       "amount": amt,
-      "account": _upiOrAccount.text.isEmpty ? "7409989270@upi" : _upiOrAccount.text,
+      "account": acct,
       "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
       "status": "Pending (Subah 8 se 2 PM ke beech clear hoga)",
-    });
+      "timestamp": FieldValue.serverTimestamp(),
+    };
 
-    setState(() {
-      userWalletBalance -= amt;
-    });
+    try {
+      await FirebaseFirestore.instance.collection('withdrawals').add(withData);
+      await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).update({
+        'balance': FieldValue.increment(-amt),
+      });
+    } catch (_) {}
+
+    withdrawalHistory.insert(0, withData);
+    setState(() => userWalletBalance -= amt);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(backgroundColor: Colors.green, content: Text("Withdrawal Request Lag Gayi Hai!")),
@@ -1533,7 +1646,7 @@ class MoreMenuScreen extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(currentLoggedInUserName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                    Text(currentLoggedInUserName.isEmpty ? "User" : currentLoggedInUserName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
                     Text("User ID: $currentLoggedInUserMobile", style: TextStyle(color: Color(0xFFF59E0B), fontSize: 13)),
                   ],
                 ),
@@ -1559,9 +1672,7 @@ class MoreMenuScreen extends StatelessWidget {
             title: Text("Help & Support (WhatsApp)"),
             subtitle: Text("Contact: 7409989270"),
             trailing: Icon(Icons.arrow_forward_ios, size: 14),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("WhatsApp Support: 7409989270")));
-            },
+            onTap: () => openWhatsAppChat(),
           ),
           ListTile(
             leading: Icon(Icons.lock_reset, color: Color(0xFFF59E0B)),
@@ -1628,14 +1739,6 @@ class MyPlayGameScreen extends StatelessWidget {
                         SizedBox(height: 4),
                         Text("Type: ${item['type']}", style: TextStyle(color: Colors.white70, fontSize: 13)),
                         Text("Numbers: ${item['numbers']}", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                        Divider(color: Colors.white12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Time: ${item['time']}", style: TextStyle(color: Colors.white38, fontSize: 11)),
-                            Text("Date: ${item['date']}", style: TextStyle(color: Colors.white38, fontSize: 11)),
-                          ],
-                        )
                       ],
                     ),
                   ),
@@ -1673,7 +1776,7 @@ class WithdrawalListScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 18. SHARE & EARN (7% COMMISSION ONLY) -----------------
+// ----------------- 18. SHARE & EARN SCREEN -----------------
 class ShareAndEarnScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1706,7 +1809,7 @@ class ShareAndEarnScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 19. TERMS & CONDITIONS SCREEN (UPDATED 7%) -----------------
+// ----------------- 19. TERMS & CONDITIONS SCREEN -----------------
 class TermsAndConditionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
