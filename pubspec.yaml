@@ -1,4 +1,4 @@
-name: disawar_king_app
+name: Disawar_King_App
 description: "Disawar King Official App"
 publish_to: 'none'
 version: 1.0.0+1
@@ -10,6 +10,22 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
+
+flutter:
+  uses-material-design: true
+name: Disawar_King_App
+description: "Disawar King Official App"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  url_launcher: ^6.2.5
 
 flutter:
   uses-material-design: true
