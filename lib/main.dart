@@ -524,3 +524,43 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
     );
   }
 }
+
+// ----------------- 4. MAIN NAVIGATION -----------------
+class MainNavigationScreen extends StatefulWidget {
+  @override
+  _MainNavigationScreenState createState() => _MainNavigationScreenState();
+}
+
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _screens = [
+    HomeLiveResultsScreen(),
+    GameMarketsListScreen(),
+    ResultsHistoryScreen(),
+    WalletScreen(),
+    MoreMenuScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _screens[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        selectedItemColor: const Color(0xFFF59E0B),
+        unselectedItemColor: Colors.white60,
+        backgroundColor: const Color(0xFF1E293B),
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.sports_esports), label: "Play Game"),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), label: "Results"),
+          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: "Wallet"),
+          BottomNavigationBarItem(icon: Icon(Icons.menu), label: "More"),
+        ],
+      ),
+    );
+  }
+}
