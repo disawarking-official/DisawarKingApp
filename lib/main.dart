@@ -469,49 +469,31 @@ class DirectResetPasswordScreen extends StatefulWidget {
 }
 
 class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
-  final _mobileController = TextEditingController();
-  final _newPassController = TextEditingController();
-  bool _isLoading = false;
+  final _mobile = TextEditingController();
+  final _newPass = TextEditingController();
+  bool _loading = false;
 
-  void _resetPassword() async {
-    String mobile = _mobileController.text.trim();
-    String newPass = _newPassController.text.trim();
-
-    if (mobile.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("10 anko ka Mobile Number dalein!")));
+  void _reset() async {
+    String m = _mobile.text.trim();
+    String p = _newPass.text.trim();
+    if (m.length != 10 || p.length < 4) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Sahi Mobile aur Password (min 4 digit) dalein!")));
       return;
     }
-    if (newPass.length < 4) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Naya Password kam se kam 4 anko ka ho!")));
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
+    setState(() => _loading = true);
     try {
-      var userDoc = await FirebaseFirestore.instance.collection('users').doc(mobile).get();
-      if (!userDoc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(backgroundColor: Colors.redAccent, content: Text("Yeh Mobile registered nahi hai! Pehle account banayein.")),
-        );
-        setState(() => _isLoading = false);
+      var doc = await FirebaseFirestore.instance.collection('users').doc(m).get();
+      if (!doc.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text("User nahi mila!")));
         return;
       }
-
-      await FirebaseFirestore.instance.collection('users').doc(mobile).update({
-        'password': newPass,
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(backgroundColor: Colors.green, content: Text("Password Safalta se Badal Diya Gaya! Ab Login karein.")),
-      );
+      await FirebaseFirestore.instance.collection('users').doc(m).update({'password': p});
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Password badal gaya! Login karein.")));
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.redAccent, content: Text("Update nahi hua: $e")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -519,9 +501,26 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Reset Password")),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E2
+        child: Column(
+          children: [
+            TextField(controller: _mobile, keyboardType: TextInputType.phone, maxLength: 10, decoration: const InputDecoration(labelText: "Mobile", counterText: "", border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: _newPass, obscureText: true, decoration: const InputDecoration(labelText: "Naya Password", border: OutlineInputBorder())),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                onPressed: _loading ? null : _reset,
+                child: _loading ? const CircularProgressIndicator(color: Colors.black) : const Text("UPDATE PASSWORD", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
