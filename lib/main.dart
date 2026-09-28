@@ -6,7 +6,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: "AIzaSyAF1_OH3Szs8--OcwxHA11Fsj5x-iGSPIA",
+        appId: "1:1015457895217:android:09cb8d98e56cc50b359610",
+        messagingSenderId: "1015457895217",
+        projectId: "disawarking-ead58",
+      ),
+    );
   } catch (e) {
     debugPrint("Firebase init: $e");
   }
