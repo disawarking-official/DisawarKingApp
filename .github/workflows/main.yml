@@ -23,11 +23,16 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Setup Android Project & Preserve Code
+      - name: Create Android Structure
         run: |
+          # main.dart aur pubspec.yaml ka backup lete hain
           cp lib/main.dart /tmp/main.dart.bak
+          cp pubspec.yaml /tmp/pubspec.yaml.bak
+          # Android environment ready karte hain
           flutter create . --platforms=android --org=com.disawarking.app --overwrite
+          # Hamara original code aur packages wapas daalte hain
           cp /tmp/main.dart.bak lib/main.dart
+          cp /tmp/pubspec.yaml.bak pubspec.yaml
 
       - name: Build Release APK
         run: |
