@@ -23,6 +23,12 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Setup Android Project & Preserve Code
+        run: |
+          cp lib/main.dart /tmp/main.dart.bak
+          flutter create . --platforms=android --org=com.disawarking.app --overwrite
+          cp /tmp/main.dart.bak lib/main.dart
+
       - name: Build Release APK
         run: |
           flutter pub get
