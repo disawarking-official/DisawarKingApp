@@ -1,5 +1,5 @@
-name: matka_app
-description: "Game of Satta App"
+name: disawar_king_app
+description: "Disawar King Official App"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.6
 
 flutter:
   uses-material-design: true
