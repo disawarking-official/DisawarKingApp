@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(DisawarKingApp());
@@ -13,7 +14,7 @@ class DisawarKingApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Color(0xFF121212),
-        primaryColor: Color(0xFFFFB300), // Royal Gold/Amber
+        primaryColor: Color(0xFFFFB300),
         colorScheme: ColorScheme.dark(
           primary: Color(0xFFFFB300),
           secondary: Color(0xFFFFA000),
@@ -32,11 +33,25 @@ class DisawarKingApp extends StatelessWidget {
   }
 }
 
-// Global Wallet State
+// ----------------- GLOBAL APP STATE -----------------
 double userWalletBalance = 0.0;
-String currentLoggedInUser = "";
+String currentLoggedInUserMobile = "7409989270";
+String currentLoggedInUserName = "Sheelu Bhartiya";
+final String officialWhatsAppNumber = "917409989270"; // Country code + 91
 
-// ----------------- WIDGET: APP BRAND LOGO -----------------
+// My Play Game Data Store
+List<Map<String, dynamic>> playedGamesHistory = [];
+List<Map<String, dynamic>> withdrawalHistory = [];
+
+// Helper Function: WhatsApp Direct Open
+Future<void> openWhatsAppChat({String message = "Namaste DisawarKing Support, mujhe sahayata chahiye."}) async {
+  final Uri url = Uri.parse("https://wa.me/$officialWhatsAppNumber?text=${Uri.encodeComponent(message)}");
+  if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+    // fallback
+  }
+}
+
+// ----------------- WIDGET: LOGO -----------------
 Widget buildAppLogo() {
   return Column(
     mainAxisSize: MainAxisSize.min,
@@ -56,7 +71,7 @@ Widget buildAppLogo() {
         ),
         child: Icon(Icons.workspace_premium, size: 55, color: Colors.black),
       ),
-      SizedBox(height: 12),
+      SizedBox(height: 10),
       Text(
         "DisawarKingApp",
         style: TextStyle(
@@ -66,10 +81,7 @@ Widget buildAppLogo() {
           letterSpacing: 1.2,
         ),
       ),
-      Text(
-        "Official Gaming Portal",
-        style: TextStyle(color: Colors.white54, fontSize: 12),
-      ),
+      Text("Official Gaming Portal", style: TextStyle(color: Colors.white54, fontSize: 12)),
     ],
   );
 }
@@ -86,14 +98,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     if (_mobileController.text.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Kripya 10 anko ka Mobile Number darj karein!")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("10 anko ka Mobile Number darj karein!")));
       return;
     }
     if (_passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password darj karein!")));
       return;
     }
-    currentLoggedInUser = _mobileController.text;
+    currentLoggedInUserMobile = _mobileController.text;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => MainNavigationScreen()),
@@ -110,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               children: [
                 buildAppLogo(),
-                SizedBox(height: 35),
+                SizedBox(height: 30),
                 Container(
                   padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -123,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text("Login", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.amber)),
                       Text("Apne Mobile Number se Login karein", style: TextStyle(color: Colors.white60, fontSize: 13)),
-                      SizedBox(height: 20),
+                      SizedBox(height: 18),
                       TextField(
                         controller: _mobileController,
                         keyboardType: TextInputType.phone,
@@ -137,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
-                      SizedBox(height: 14),
+                      SizedBox(height: 12),
                       TextField(
                         controller: _passwordController,
                         obscureText: true,
@@ -160,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       SizedBox(
                         width: double.infinity,
-                        height: 50,
+                        height: 48,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFFFFB300),
@@ -173,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-                SizedBox(height: 20),
+                SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (c) => RegisterOtpScreen()));
@@ -197,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ----------------- 2. REGISTRATION FLOW (OTP -> DETAILS -> ID CREATED) -----------------
+// ----------------- 2. REGISTER SCREEN (OTP BASED) -----------------
 class RegisterOtpScreen extends StatefulWidget {
   @override
   _RegisterOtpScreenState createState() => _RegisterOtpScreenState();
@@ -217,9 +229,7 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("10 digit ka valid Mobile Number dalein")));
       return;
     }
-    setState(() {
-      isOtpSent = true;
-    });
+    setState(() => isOtpSent = true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: Colors.green,
@@ -239,6 +249,9 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
       return;
     }
 
+    currentLoggedInUserName = _nameController.text;
+    currentLoggedInUserMobile = _mobileController.text;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -252,7 +265,7 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
           ],
         ),
         content: Text(
-          "Aapki ID safaltapoorvak ban gayi hai!\n\nAapka User ID: ${_mobileController.text}\nPassword: ${_passController.text}",
+          "Aapki ID ban chuki hai!\n\nNaam: $currentLoggedInUserName\nUser ID (Mobile): $currentLoggedInUserMobile",
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -275,94 +288,89 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
       appBar: AppBar(title: Text("Naya Account Register")),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(20),
-        child: Column(
-          children: [
-            SizedBox(height: 10),
-            Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Color(0xFF1E1E1E),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.amber.withOpacity(0.2)),
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.amber.withOpacity(0.2)),
+          ),
+          child: Column(
+            children: [
+              TextField(
+                controller: _mobileController,
+                keyboardType: TextInputType.phone,
+                maxLength: 10,
+                enabled: !isOtpSent,
+                decoration: InputDecoration(
+                  labelText: "Mobile Number",
+                  prefixIcon: Icon(Icons.phone, color: Colors.amber),
+                  counterText: "",
+                  border: OutlineInputBorder(),
+                ),
               ),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _mobileController,
-                    keyboardType: TextInputType.phone,
-                    maxLength: 10,
-                    enabled: !isOtpSent,
-                    decoration: InputDecoration(
-                      labelText: "Mobile Number",
-                      prefixIcon: Icon(Icons.phone, color: Colors.amber),
-                      counterText: "",
-                      border: OutlineInputBorder(),
-                    ),
+              SizedBox(height: 12),
+              if (!isOtpSent)
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                    onPressed: _sendOtp,
+                    child: Text("OTP Bhejo", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                   ),
-                  SizedBox(height: 12),
-                  if (!isOtpSent)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 46,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-                        onPressed: _sendOtp,
-                        child: Text("OTP Bhejo", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  if (isOtpSent) ...[
-                    TextField(
-                      controller: _otpController,
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                      decoration: InputDecoration(
-                        labelText: "Enter 6-Digit OTP",
-                        prefixIcon: Icon(Icons.security, color: Colors.amber),
-                        counterText: "",
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    TextField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: "Aapka Naam",
-                        prefixIcon: Icon(Icons.person, color: Colors.amber),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    TextField(
-                      controller: _passController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        labelText: "Apna Password Banayein",
-                        prefixIcon: Icon(Icons.lock, color: Colors.amber),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-                        onPressed: _verifyAndCreate,
-                        child: Text("OTP Verify & ID Banayein", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ]
-                ],
-              ),
-            )
-          ],
+                ),
+              if (isOtpSent) ...[
+                TextField(
+                  controller: _otpController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  decoration: InputDecoration(
+                    labelText: "Enter 6-Digit OTP",
+                    prefixIcon: Icon(Icons.security, color: Colors.amber),
+                    counterText: "",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 12),
+                TextField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: "Aapka Pura Naam",
+                    prefixIcon: Icon(Icons.person, color: Colors.amber),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 12),
+                TextField(
+                  controller: _passController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Apna Password Banayein",
+                    prefixIcon: Icon(Icons.lock, color: Colors.amber),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                    onPressed: _verifyAndCreate,
+                    child: Text("OTP Verify & ID Banayein", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ]
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ----------------- 3. FORGOT PASSWORD (OTP BASED) -----------------
+// ----------------- 3. FORGOT PASSWORD SCREEN -----------------
 class ForgotPasswordOtpScreen extends StatefulWidget {
   @override
   _ForgotPasswordOtpScreenState createState() => _ForgotPasswordOtpScreenState();
@@ -397,7 +405,7 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(backgroundColor: Colors.green, content: Text("Password safaltapoorvak badal diya gaya! Ab Login karein.")),
+      SnackBar(backgroundColor: Colors.green, content: Text("Password badal diya gaya hai! Ab Login karein.")),
     );
     Navigator.pop(context);
   }
@@ -521,8 +529,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ----------------- 5. HOME SCREEN (LIVE RESULTS & RECENT WINNING NUMBERS) -----------------
-class HomeLiveResultsScreen extends StatelessWidget {
+// ----------------- 5. HOME SCREEN (HEADER WITH USER INFO, WALLET & WHATSAPP) -----------------
+class HomeLiveResultsScreen extends StatefulWidget {
+  @override
+  _HomeLiveResultsScreenState createState() => _HomeLiveResultsScreenState();
+}
+
+class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
   final List<Map<String, String>> liveResults = [
     {"market": "DISAWAR", "result": "84", "time": "05:00 AM", "status": "Declared"},
     {"market": "FARIDABAD", "result": "12", "time": "06:15 PM", "status": "Declared"},
@@ -534,76 +547,142 @@ class HomeLiveResultsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("DisawarKing Live"),
-        actions: [
-          Center(
-            child: Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Text(
-                "₹ ${userWalletBalance.toStringAsFixed(2)}",
-                style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // CUSTOM TOP HEADER
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Color(0xFF1E1E1E),
+                border: Border(bottom: BorderSide(color: Colors.amber.withOpacity(0.3))),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // LEFT: USER NAME & MOBILE NUMBER
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.amber,
+                        child: Icon(Icons.person, color: Colors.black, size: 24),
+                      ),
+                      SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            currentLoggedInUserName,
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
+                          ),
+                          Text(
+                            "+91 $currentLoggedInUserMobile",
+                            style: TextStyle(fontSize: 12, color: Colors.amber, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  // RIGHT: BALANCE & DIRECT WHATSAPP BUTTON
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black45,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text("Wallet", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                            Text("₹ ${userWalletBalance.toStringAsFixed(2)}", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      InkWell(
+                        onTap: () => openWhatsAppChat(message: "Namaste DisawarKing Support! Meri ID hai: $currentLoggedInUserMobile"),
+                        child: Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Color(0xFF25D366),
+                            shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: Colors.green.withOpacity(0.4), blurRadius: 8)],
+                          ),
+                          child: Icon(Icons.chat, color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          )
-        ],
-      ),
-      body: ListView(
-        padding: EdgeInsets.all(14),
-        children: [
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Color(0xFF2C2202), Color(0xFF1E1E1E)]),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.amber.withOpacity(0.4)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("LIVE RESULT DASHBOARD", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 15)),
-                    SizedBox(height: 4),
-                    Text("Sabse Tej Live Result Updates", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  ],
-                ),
-                Icon(Icons.flash_on, color: Colors.amber, size: 36),
-              ],
-            ),
-          ),
-          SizedBox(height: 14),
-          Text("Aaj Ka Taaza Result", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white70)),
-          SizedBox(height: 10),
-          ...liveResults.map((item) {
-            bool isWaiting = item['status'] == "Waiting";
-            return Card(
-              color: Color(0xFF1E1E1E),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              margin: EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                title: Text(item['market']!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                subtitle: Text("Timing: ${item['time']}", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                trailing: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isWaiting ? Colors.grey[800] : Color(0xFFFFB300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    item['result']!,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isWaiting ? Colors.white : Colors.black,
+
+            // LIVE RESULTS LIST
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.all(12),
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [Color(0xFF2C2202), Color(0xFF1E1E1E)]),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("DISAWAR KING LIVE RESULTS", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
+                            SizedBox(height: 4),
+                            Text("Sabse Tej aur 100% Sahi Updates", style: TextStyle(color: Colors.white70, fontSize: 11)),
+                          ],
+                        ),
+                        Icon(Icons.flash_on, color: Colors.amber, size: 30),
+                      ],
                     ),
                   ),
-                ),
+                  SizedBox(height: 12),
+                  Text("Aaj Ka Taaza Result", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white70)),
+                  SizedBox(height: 8),
+                  ...liveResults.map((item) {
+                    bool isWaiting = item['status'] == "Waiting";
+                    return Card(
+                      color: Color(0xFF1E1E1E),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      margin: EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        title: Text(item['market']!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                        subtitle: Text("Time: ${item['time']}", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                        trailing: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isWaiting ? Colors.grey[800] : Color(0xFFFFB300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            item['result']!,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isWaiting ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
               ),
-            );
-          }),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -635,7 +714,7 @@ class GameMarketsListScreen extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
               title: Text(game['name']!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.amber)),
-              subtitle: Text("Open-Close: ${game['time']}", style: TextStyle(color: Colors.white54, fontSize: 12)),
+              subtitle: Text("Timing: ${game['time']}", style: TextStyle(color: Colors.white54, fontSize: 12)),
               trailing: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF2E7D32),
@@ -657,7 +736,7 @@ class GameMarketsListScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 7. GAME MODE SELECT (JODI, HARUP, CROSSING) -----------------
+// ----------------- 7. GAME MODE SELECT SCREEN -----------------
 class GameModeSelectScreen extends StatelessWidget {
   final String gameName;
   GameModeSelectScreen({required this.gameName});
@@ -677,14 +756,14 @@ class GameModeSelectScreen extends StatelessWidget {
                 Column(
                   children: [
                     Text("Jodi Rate", style: TextStyle(color: Colors.white60, fontSize: 13)),
-                    Text("10 = 950", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text("10 ka 950 ₹", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 18)),
                   ],
                 ),
                 Container(height: 35, width: 1, color: Colors.white24),
                 Column(
                   children: [
-                    Text("Harup Rate", style: TextStyle(color: Colors.white60, fontSize: 13)),
-                    Text("10 = 95", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text("Haruff Rate", style: TextStyle(color: Colors.white60, fontSize: 13)),
+                    Text("10 ka 95 ₹", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 18)),
                   ],
                 ),
               ],
@@ -720,7 +799,7 @@ class GameModeSelectScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 8. JODI SCREEN (SUBMIT CUT FIX) -----------------
+// ----------------- 8. JODI SCREEN (MY PLAY GAME SYNC & FIXED SUBMIT) -----------------
 class JodiSelectionScreen extends StatefulWidget {
   final String gameName;
   JodiSelectionScreen({required this.gameName});
@@ -748,17 +827,39 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
     }
     if (totalAmount > userWalletBalance) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.red, content: Text("Wallet me paryapt balance nahi hai! Add Money karein.")),
+        SnackBar(backgroundColor: Colors.red, content: Text("Wallet balance kam hai! Pehle Add Money karein.")),
       );
       return;
     }
+
+    // Save played numbers into My Play Game history
+    List<String> chosenNumbers = [];
+    for (int i = 0; i < 100; i++) {
+      int val = int.tryParse(_controllers[i].text) ?? 0;
+      if (val > 0) {
+        String numStr = (i + 1) < 10 ? "0${i + 1}" : "${i + 1}";
+        chosenNumbers.add("$numStr (₹$val)");
+      }
+    }
+
+    playedGamesHistory.insert(0, {
+      "market": widget.gameName,
+      "type": "Jodi (01-100)",
+      "numbers": chosenNumbers.join(", "),
+      "amount": totalAmount,
+      "time": DateTime.now().toString().substring(11, 16),
+      "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
+    });
+
     setState(() {
       userWalletBalance -= totalAmount;
     });
+
     for (var c in _controllers) c.clear();
     _calculateTotal();
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(backgroundColor: Colors.green, content: Text("Bid Successfully Lag Gayi! ₹$totalAmount cut ho gaye.")),
+      SnackBar(backgroundColor: Colors.green, content: Text("Game Safalta se Lag Gaya! 'My Play Game' me save ho gaya.")),
     );
   }
 
@@ -826,6 +927,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
                 },
               ),
             ),
+            // FIXED BOTTOM BAR (NO CUT)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -885,6 +987,27 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
     for (var c in _andar) sum += int.tryParse(c.text) ?? 0;
     for (var c in _bahar) sum += int.tryParse(c.text) ?? 0;
     setState(() => total = sum);
+  }
+
+  void _submitHarup() {
+    if (total <= 0) return;
+    if (total > userWalletBalance) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Paryapt Balance nahi hai!")));
+      return;
+    }
+    playedGamesHistory.insert(0, {
+      "market": widget.gameName,
+      "type": "Harup (A/B)",
+      "numbers": "Andar/Bahar Harup Selected",
+      "amount": total,
+      "time": DateTime.now().toString().substring(11, 16),
+      "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
+    });
+    setState(() {
+      userWalletBalance -= total;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.green, content: Text("Harup Bids Placed!")));
+    Navigator.pop(context);
   }
 
   Widget _buildBox(String label, List<TextEditingController> list) {
@@ -960,9 +1083,7 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Harup Bids Placed!")));
-                    },
+                    onPressed: _submitHarup,
                     child: Text("SUBMIT", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                   )
                 ],
@@ -989,6 +1110,28 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   final _num2 = TextEditingController();
   final _amount = TextEditingController();
   final List<Map<String, dynamic>> _list = [];
+
+  void _submitCrossing() {
+    int total = _list.fold(0, (sum, i) => sum + (int.tryParse(i['amt']) ?? 0));
+    if (total <= 0) return;
+    if (total > userWalletBalance) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Paryapt Balance nahi hai!")));
+      return;
+    }
+    playedGamesHistory.insert(0, {
+      "market": widget.gameName,
+      "type": "Crossing",
+      "numbers": _list.map((e) => e['pair']).join(", "),
+      "amount": total,
+      "time": DateTime.now().toString().substring(11, 16),
+      "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
+    });
+    setState(() {
+      userWalletBalance -= total;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.green, content: Text("Crossing Game Lag Gaya!")));
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1036,6 +1179,19 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
                     trailing: Text("₹ ${e['amt']}", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
                   ),
                 )),
+            if (_list.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    onPressed: _submitCrossing,
+                    child: Text("SUBMIT CROSSING GAME", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -1068,7 +1224,7 @@ class ResultsHistoryScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 12. WALLET & PAYMENTS (ADD MONEY & WITHDRAW) -----------------
+// ----------------- 12. WALLET SCREEN -----------------
 class WalletScreen extends StatefulWidget {
   @override
   _WalletScreenState createState() => _WalletScreenState();
@@ -1124,8 +1280,15 @@ class _WalletScreenState extends State<WalletScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Payment Options Supported", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
-                  SizedBox(height: 12),
+                  Text("Rules & Payment Limits:", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
+                  SizedBox(height: 8),
+                  Text("• Kam se kam ADD MONEY: ₹50", style: TextStyle(color: Colors.white70)),
+                  Text("• Kam se kam WITHDRAWAL: ₹500", style: TextStyle(color: Colors.white70)),
+                  Text("• Withdrawal Timing: Subah 8:00 AM se 2:00 PM tak", style: TextStyle(color: Colors.white70)),
+                  Text("• Jeeti hui rashi ko agle din hi withdraw kiya ja sakta hai.", style: TextStyle(color: Colors.white70)),
+                  SizedBox(height: 14),
+                  Text("Payment Modes Supported:", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white70)),
+                  SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
@@ -1155,7 +1318,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 }
 
-// ----------------- 13. ADD MONEY SCREEN (QR & UTR SUBMIT) -----------------
+// ----------------- 13. ADD MONEY SCREEN (MIN ₹50) -----------------
 class AddMoneyPaymentScreen extends StatefulWidget {
   @override
   _AddMoneyPaymentScreenState createState() => _AddMoneyPaymentScreenState();
@@ -1164,8 +1327,7 @@ class AddMoneyPaymentScreen extends StatefulWidget {
 class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   final _amount = TextEditingController();
   final _utr = TextEditingController();
-
-  final String adminUpiId = "disawarking@upi";
+  final String adminUpiId = "7409989270@upi";
 
   @override
   Widget build(BuildContext context) {
@@ -1192,7 +1354,10 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
               TextField(
                 controller: _amount,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: "Kitne Paise Transfer Kiye? (₹)", border: OutlineInputBorder()),
+                decoration: InputDecoration(
+                  labelText: "Kitne Paise Transfer Kiye? (Min ₹50)",
+                  border: OutlineInputBorder(),
+                ),
               ),
               SizedBox(height: 12),
               TextField(
@@ -1207,16 +1372,20 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
                   onPressed: () {
-                    if (_amount.text.isNotEmpty && _utr.text.length >= 8) {
-                      double val = double.tryParse(_amount.text) ?? 0.0;
-                      userWalletBalance += val;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(backgroundColor: Colors.green, content: Text("₹$val Add Request Submitted! Balance updated.")),
-                      );
-                      Navigator.pop(context);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Amount aur 12-digit UTR No. enter karein!")));
+                    double val = double.tryParse(_amount.text) ?? 0.0;
+                    if (val < 50) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Kam se kam Add Money ₹50 hai!")));
+                      return;
                     }
+                    if (_utr.text.length < 8) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Valid UTR Number daalein!")));
+                      return;
+                    }
+                    userWalletBalance += val;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(backgroundColor: Colors.green, content: Text("₹$val Add Request Submitted! Balance updated.")),
+                    );
+                    Navigator.pop(context);
                   },
                   child: Text("PAYMENT SUBMIT KAREIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                 ),
@@ -1229,7 +1398,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   }
 }
 
-// ----------------- 14. WITHDRAW SCREEN -----------------
+// ----------------- 14. WITHDRAW SCREEN (MIN ₹500 & TIMING) -----------------
 class WithdrawRequestScreen extends StatefulWidget {
   @override
   _WithdrawRequestScreenState createState() => _WithdrawRequestScreenState();
@@ -1238,6 +1407,38 @@ class WithdrawRequestScreen extends StatefulWidget {
 class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
   final _amount = TextEditingController();
   final _upiOrAccount = TextEditingController();
+
+  void _submitWithdraw() {
+    double amt = double.tryParse(_amount.text) ?? 0.0;
+    if (amt < 500) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Kam se kam ₹500 hi Withdraw kar sakte hain!")));
+      return;
+    }
+    if (amt > userWalletBalance) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Paryapt balance nahi hai")));
+      return;
+    }
+    if (_upiOrAccount.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Bank Account ya UPI ID enter karein")));
+      return;
+    }
+
+    withdrawalHistory.insert(0, {
+      "amount": amt,
+      "account": _upiOrAccount.text,
+      "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
+      "status": "Pending (Subah 8 se 2 baje ke beech clear hoga)",
+    });
+
+    setState(() {
+      userWalletBalance -= amt;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(backgroundColor: Colors.green, content: Text("Withdrawal Request Lag Gayi Hai! List me check karein.")),
+    );
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1251,12 +1452,14 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Available Balance: ₹${userWalletBalance.toStringAsFixed(2)}", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+              Text("Available Balance: ₹${userWalletBalance.toStringAsFixed(2)}", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
+              SizedBox(height: 6),
+              Text("Note: Subah 8 baje se 2 baje tak hi withdraw kar sakte hain.", style: TextStyle(color: Colors.orangeAccent, fontSize: 12)),
               SizedBox(height: 16),
               TextField(
                 controller: _amount,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: "Withdrawal Amount (₹)", border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: "Withdrawal Amount (Min ₹500)", border: OutlineInputBorder()),
               ),
               SizedBox(height: 12),
               TextField(
@@ -1269,18 +1472,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
                 height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-                  onPressed: () {
-                    double amt = double.tryParse(_amount.text) ?? 0.0;
-                    if (amt <= 0 || amt > userWalletBalance) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Paryapt balance nahi hai")));
-                      return;
-                    }
-                    userWalletBalance -= amt;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(backgroundColor: Colors.green, content: Text("Withdrawal request lag gayi hai! 30 min me paise mil jayenge.")),
-                    );
-                    Navigator.pop(context);
-                  },
+                  onPressed: _submitWithdraw,
                   child: Text("WITHDRAW REQUEST BHEJO", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                 ),
               )
@@ -1292,12 +1484,12 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
   }
 }
 
-// ----------------- 15. MORE MENU -----------------
+// ----------------- 15. MORE MENU SCREEN -----------------
 class MoreMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("DisawarKing Menu")),
+      appBar: AppBar(title: Text("More Menu")),
       body: ListView(
         children: [
           Container(
@@ -1305,29 +1497,258 @@ class MoreMenuScreen extends StatelessWidget {
             color: Color(0xFF1E1E1E),
             child: Row(
               children: [
-                CircleAvatar(backgroundColor: Colors.amber, child: Icon(Icons.person, color: Colors.black)),
+                CircleAvatar(backgroundColor: Colors.amber, radius: 24, child: Icon(Icons.person, color: Colors.black, size: 28)),
                 SizedBox(width: 14),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("User ID: $currentLoggedInUser", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                    Text("Verified Member", style: TextStyle(color: Colors.green, fontSize: 12)),
+                    Text(currentLoggedInUserName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                    Text("User ID: $currentLoggedInUserMobile", style: TextStyle(color: Colors.amber, fontSize: 13)),
                   ],
                 ),
               ],
             ),
           ),
-          ListTile(leading: Icon(Icons.history, color: Colors.amber), title: Text("My Game Bets"), onTap: () {}),
-          ListTile(leading: Icon(Icons.receipt_long, color: Colors.amber), title: Text("Passbook / Ledger"), onTap: () {}),
-          ListTile(leading: Icon(Icons.support_agent, color: Colors.amber), title: Text("WhatsApp Support"), onTap: () {}),
+          ListTile(
+            leading: Icon(Icons.sports_esports, color: Colors.amber),
+            title: Text("My Played Game"),
+            subtitle: Text("Aapke dwara lagaye gaye games"),
+            trailing: Icon(Icons.arrow_forward_ios, size: 14),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => MyPlayGameScreen())),
+          ),
+          ListTile(
+            leading: Icon(Icons.account_balance_wallet_outlined, color: Colors.amber),
+            title: Text("Withdrawal List"),
+            subtitle: Text("Nikaasi ki request status"),
+            trailing: Icon(Icons.arrow_forward_ios, size: 14),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => WithdrawalListScreen())),
+          ),
+          ListTile(
+            leading: Icon(Icons.chat, color: Color(0xFF25D366)),
+            title: Text("Help & Support (WhatsApp)"),
+            subtitle: Text("Chat karein: 7409989270"),
+            trailing: Icon(Icons.arrow_forward_ios, size: 14),
+            onTap: () => openWhatsAppChat(message: "Namaste DisawarKing Support, mujhe help chahiye."),
+          ),
+          ListTile(
+            leading: Icon(Icons.lock_reset, color: Colors.amber),
+            title: Text("Change Password"),
+            trailing: Icon(Icons.arrow_forward_ios, size: 14),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => ForgotPasswordOtpScreen())),
+          ),
+          ListTile(
+            leading: Icon(Icons.share, color: Colors.amber),
+            title: Text("Share & Earn"),
+            subtitle: Text("Company ke munafey par 7% aur 5% bonus"),
+            trailing: Icon(Icons.arrow_forward_ios, size: 14),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => ShareAndEarnScreen())),
+          ),
+          ListTile(
+            leading: Icon(Icons.description, color: Colors.amber),
+            title: Text("Terms & Conditions"),
+            subtitle: Text("Game aur payment ke niyam"),
+            trailing: Icon(Icons.arrow_forward_ios, size: 14),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => TermsAndConditionsScreen())),
+          ),
+          Divider(color: Colors.white24),
           ListTile(
             leading: Icon(Icons.power_settings_new, color: Colors.red),
-            title: Text("Logout", style: TextStyle(color: Colors.red)),
+            title: Text("Logout", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
             onTap: () {
               Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => LoginScreen()));
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ----------------- 16. MY PLAYED GAME SCREEN -----------------
+class MyPlayGameScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("My Played Game")),
+      body: playedGamesHistory.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.history_toggle_off, size: 60, color: Colors.white30),
+                  SizedBox(height: 12),
+                  Text("Aapne abhi tak koi game nahi lagaya hai", style: TextStyle(color: Colors.white54)),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: EdgeInsets.all(12),
+              itemCount: playedGamesHistory.length,
+              itemBuilder: (context, index) {
+                final item = playedGamesHistory[index];
+                return Card(
+                  color: Color(0xFF1E1E1E),
+                  margin: EdgeInsets.only(bottom: 10),
+                  child: Padding(
+                    padding: EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(item['market'], style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text("₹ ${item['amount']}", style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+                          ],
+                        ),
+                        SizedBox(height: 6),
+                        Text("Game Type: ${item['type']}", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                        Text("Selected: ${item['numbers']}", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        Divider(color: Colors.white12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("Time: ${item['time']}", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                            Text("Date: ${item['date']}", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+
+// ----------------- 17. WITHDRAWAL LIST SCREEN -----------------
+class WithdrawalListScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Withdrawal History")),
+      body: withdrawalHistory.isEmpty
+          ? Center(
+              child: Text("Koi withdrawal request nahi hai", style: TextStyle(color: Colors.white54)),
+            )
+          : ListView.builder(
+              padding: EdgeInsets.all(12),
+              itemCount: withdrawalHistory.length,
+              itemBuilder: (context, index) {
+                final item = withdrawalHistory[index];
+                return Card(
+                  color: Color(0xFF1E1E1E),
+                  child: ListTile(
+                    title: Text("₹ ${item['amount']}", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 18)),
+                    subtitle: Text("A/C: ${item['account']}\nStatus: ${item['status']}", style: TextStyle(color: Colors.white70)),
+                    trailing: Text(item['date'], style: TextStyle(color: Colors.white38, fontSize: 12)),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+
+// ----------------- 18. SHARE & EARN SCREEN -----------------
+class ShareAndEarnScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Share & Earn")),
+      body: Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [Color(0xFF2B2002), Color(0xFF1E1E1E)]),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.amber.withOpacity(0.3)),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.card_giftcard, size: 60, color: Colors.amber),
+                  SizedBox(height: 12),
+                  Text("SHARE THE APP AND EARN", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
+                  SizedBox(height: 8),
+                  Text("ऐप को शेयर करें और पाएं लाइफ टाइम कंपनी के मुनाफे पर 7% बोनस!", textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.white70)),
+                  SizedBox(height: 6),
+                  Text("SHARE THE APP AND GET 5% ON COMPANY'S PROFIT", textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Colors.amberAccent)),
+                ],
+              ),
+            ),
+            SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF25D366)),
+                icon: Icon(Icons.share, color: Colors.white),
+                label: Text("WhatsApp Par Doston Ko Share Karein", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  openWhatsAppChat(message: "DisawarKing Official App download karein aur khelein! Referral Code: $currentLoggedInUserMobile");
+                },
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ----------------- 19. TERMS & CONDITIONS SCREEN -----------------
+class TermsAndConditionsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Terms & Conditions")),
+      body: ListView(
+        padding: EdgeInsets.all(16),
+        children: [
+          _ruleCard(
+            title: "Game Timing & Rules",
+            text: "• सभी गेम सुबह 6 बजे से शुरू होंगे |\n• गेम के अंतिम समय से 2 घंटे पहले अनलिमिटेड प्ले कर सकते हैं |\n• मान लो फरीदाबाद में गेम लगाने का अंतिम समय 05:50 PM का है तो 03:50 PM से पहले अनलिमिटेड लगायें, परन्तु 03:50 PM के बाद और 05:50 PM तक अधिकतम ₹200 की गेम ही मान्य होगी |",
+          ),
+          _ruleCard(
+            title: "Withdrawal Condition & Limit",
+            text: "• सुबह 8 बजे से 2 बजे तक ही Withdrawal कर सकते हैं |\n• कम से कम ₹500 रुपये Withdrawal कर सकते हैं |\n• जीती हुई राशि को अगले दिन ही Withdrawal किया जा सकता है |",
+          ),
+          _ruleCard(
+            title: "Payment Holiday (भुगतान अवकाश)",
+            text: "• हर महीने की 1 और 15 तारीख को भुगतान बंद रहेगा |\n• कुछ सरकारी छुट्टी पर भी भुगतान बंद हो सकते हैं |\n• महीने के हर आखिरी दिन छुट्टी होती है |",
+          ),
+          _ruleCard(
+            title: "Rates & Deposit Limit",
+            text: "• कम से कम ADD MONEY: ₹50 है |\n• JODI RATE: 10 का 950 ₹\n• HARUFF RATE: 10 का 95 ₹",
+          ),
+          _ruleCard(
+            title: "Share & Earn Scheme",
+            text: "• ऐप को शेयर करें और पाएं लाइफ टाइम कंपनी के मुनाफे पर 7% बोनस |\n• SHARE THE APP AND GET 5% ON COMPANY'S PROFIT",
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ruleCard({required String title, required String text}) {
+    return Card(
+      color: Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
+            SizedBox(height: 8),
+            Text(text, style: TextStyle(fontSize: 13, height: 1.5, color: Colors.white70)),
+          ],
+        ),
       ),
     );
   }
