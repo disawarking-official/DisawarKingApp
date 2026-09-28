@@ -33,6 +33,7 @@ class DisawarKingApp extends StatelessWidget {
   }
 }
 
+// ----------------- GLOBAL APP STATE -----------------
 double userWalletBalance = 0.0;
 String currentLoggedInUserMobile = "7409989270";
 String currentLoggedInUserName = "Sheelu Bhartiya";
@@ -43,7 +44,9 @@ List<Map<String, dynamic>> withdrawalHistory = [];
 
 Future<void> openWhatsAppChat({String message = "Namaste DisawarKing Support, mujhe sahayata chahiye."}) async {
   final Uri url = Uri.parse("https://wa.me/$officialWhatsAppNumber?text=${Uri.encodeComponent(message)}");
-  if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {}
+  try {
+    await launchUrl(url, mode: LaunchMode.externalApplication);
+  } catch (_) {}
 }
 
 Widget buildAppLogo() {
@@ -80,6 +83,7 @@ Widget buildAppLogo() {
   );
 }
 
+// ----------------- 1. LOGIN SCREEN -----------------
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -202,6 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+// ----------------- 2. REGISTER SCREEN (OTP BASED) -----------------
 class RegisterOtpScreen extends StatefulWidget {
   @override
   _RegisterOtpScreenState createState() => _RegisterOtpScreenState();
@@ -362,6 +367,7 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
   }
 }
 
+// ----------------- 3. FORGOT PASSWORD SCREEN -----------------
 class ForgotPasswordOtpScreen extends StatefulWidget {
   @override
   _ForgotPasswordOtpScreenState createState() => _ForgotPasswordOtpScreenState();
@@ -480,6 +486,7 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
   }
 }
 
+// ----------------- 4. MAIN BOTTOM NAVIGATION -----------------
 class MainNavigationScreen extends StatefulWidget {
   @override
   _MainNavigationScreenState createState() => _MainNavigationScreenState();
@@ -519,6 +526,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
+// ----------------- 5. HOME SCREEN (HEADER WITH USER INFO, WALLET & WHATSAPP) -----------------
 class HomeLiveResultsScreen extends StatefulWidget {
   @override
   _HomeLiveResultsScreenState createState() => _HomeLiveResultsScreenState();
@@ -672,6 +680,7 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
   }
 }
 
+// ----------------- 6. PLAY GAME MARKET LIST -----------------
 class GameMarketsListScreen extends StatelessWidget {
   final List<Map<String, String>> games = [
     {"name": "DISAWAR", "time": "06:21 am - 04:35 am"},
@@ -719,6 +728,7 @@ class GameMarketsListScreen extends StatelessWidget {
   }
 }
 
+// ----------------- 7. GAME MODE SELECT SCREEN -----------------
 class GameModeSelectScreen extends StatelessWidget {
   final String gameName;
   GameModeSelectScreen({required this.gameName});
@@ -781,6 +791,7 @@ class GameModeSelectScreen extends StatelessWidget {
   }
 }
 
+// ----------------- 8. JODI SCREEN (MY PLAY GAME SYNC & FIXED SUBMIT) -----------------
 class JodiSelectionScreen extends StatefulWidget {
   final String gameName;
   JodiSelectionScreen({required this.gameName});
@@ -947,6 +958,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
   }
 }
 
+// ----------------- 9. HARUP SCREEN -----------------
 class HarupSelectionScreen extends StatefulWidget {
   final String gameName;
   HarupSelectionScreen({required this.gameName});
@@ -1074,6 +1086,7 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
   }
 }
 
+// ----------------- 10. CROSSING SCREEN -----------------
 class CrossingSelectionScreen extends StatefulWidget {
   final String gameName;
   CrossingSelectionScreen({required this.gameName});
@@ -1176,6 +1189,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   }
 }
 
+// ----------------- 11. RESULTS HISTORY SCREEN -----------------
 class ResultsHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1200,6 +1214,7 @@ class ResultsHistoryScreen extends StatelessWidget {
   }
 }
 
+// ----------------- 12. WALLET SCREEN -----------------
 class WalletScreen extends StatefulWidget {
   @override
   _WalletScreenState createState() => _WalletScreenState();
@@ -1293,6 +1308,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 }
 
+// ----------------- 13. ADD MONEY SCREEN (MIN ₹50) -----------------
 class AddMoneyPaymentScreen extends StatefulWidget {
   @override
   _AddMoneyPaymentScreenState createState() => _AddMoneyPaymentScreenState();
@@ -1372,6 +1388,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   }
 }
 
+// ----------------- 14. WITHDRAW SCREEN (MIN ₹500 & TIMING) -----------------
 class WithdrawRequestScreen extends StatefulWidget {
   @override
   _WithdrawRequestScreenState createState() => _WithdrawRequestScreenState();
@@ -1457,6 +1474,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
   }
 }
 
+// ----------------- 15. MORE MENU SCREEN -----------------
 class MoreMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1536,6 +1554,7 @@ class MoreMenuScreen extends StatelessWidget {
   }
 }
 
+// ----------------- 16. MY PLAYED GAME SCREEN -----------------
 class MyPlayGameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1593,6 +1612,7 @@ class MyPlayGameScreen extends StatelessWidget {
   }
 }
 
+// ----------------- 17. WITHDRAWAL LIST SCREEN -----------------
 class WithdrawalListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1621,6 +1641,7 @@ class WithdrawalListScreen extends StatelessWidget {
   }
 }
 
+// ----------------- 18. SHARE & EARN SCREEN -----------------
 class ShareAndEarnScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1669,6 +1690,7 @@ class ShareAndEarnScreen extends StatelessWidget {
   }
 }
 
+// ----------------- 19. TERMS & CONDITIONS SCREEN -----------------
 class TermsAndConditionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
