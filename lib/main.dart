@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -138,7 +137,7 @@ Widget buildAppLogo() {
   );
 }
 
-// ----------------- 1. LOGIN SCREEN -----------------
+// ----------------- 1. LOGIN SCREEN (STRICT DATABASE CHECK) -----------------
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -167,7 +166,6 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       var userDoc = await FirebaseFirestore.instance.collection('users').doc(mobile).get();
 
-      // 1. Agar account bana hi nahi hai database me
       if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -178,16 +176,14 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // 2. Agar account hai lekin password galat hai
       var data = userDoc.data()!;
       if (data['password'] != pass) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat Password! Kripya sahi password dalein.")),
+          SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat Password! Sahi password dalein.")),
         );
         return;
       }
 
-      // 3. Password aur Mobile dono sahi hone par hi andar le jayein
       currentLoggedInUserMobile = mobile;
       currentLoggedInUserName = data['name'] ?? "User";
       userWalletBalance = (data['balance'] ?? 0).toDouble();
@@ -198,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.redAccent, content: Text("Internet ya Server error! Dobara try karein.")),
+        SnackBar(backgroundColor: Colors.redAccent, content: Text("Error: Kripya internet connection check karein.")),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -273,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           onPressed: _isLoading ? null : _login,
                           child: _isLoading
-                              ? CircularProgressIndicator(color: Colors.black)
+                              ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
                               : Text("LOGIN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
                         ),
                       ),
@@ -304,7 +300,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ----------------- 2. REGISTER SCREEN (SAVES TO FIREBASE) -----------------
+// ----------------- 2. REGISTER SCREEN -----------------
 class RegisterOtpScreen extends StatefulWidget {
   @override
   _RegisterOtpScreenState createState() => _RegisterOtpScreenState();
@@ -378,7 +374,7 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
           ],
         ),
         content: Text(
-          "Aapki ID Database me save ho chuki hai!\n\nNaam: $currentLoggedInUserName\nUser ID: $currentLoggedInUserMobile",
+          "Aapka Account ban gaya hai!\n\nNaam: $currentLoggedInUserName\nUser ID: $currentLoggedInUserMobile",
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -480,7 +476,7 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
                     onPressed: _isSaving ? null : _verifyAndCreate,
                     child: _isSaving
-                        ? CircularProgressIndicator(color: Colors.black)
+                        ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
                         : Text("OTP Verify & ID Banayein", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -947,7 +943,7 @@ class GameModeSelectScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 8. JODI SCREEN (SAVES GAME TO FIREBASE) -----------------
+// ----------------- 8. JODI SCREEN -----------------
 class JodiSelectionScreen extends StatefulWidget {
   final MarketConfig market;
   JodiSelectionScreen({required this.market});
@@ -1459,7 +1455,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 }
 
-// ----------------- 13. ADD MONEY (QR CODE PAYMENT) -----------------
+// ----------------- 13. ADD MONEY (PURE QR CODE SCANNER - NO DISPLAYED ID) -----------------
 class AddMoneyPaymentScreen extends StatefulWidget {
   @override
   _AddMoneyPaymentScreenState createState() => _AddMoneyPaymentScreenState();
@@ -1469,8 +1465,8 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   final _amount = TextEditingController();
   final _utr = TextEditingController();
 
-  // Real UPI link
-  final String upiPaymentData = "upi://pay?pa=9761630128@ybl&pn=DisawarKing&cu=INR";
+  // Asli UPI Payment Link: 9761630128@ybl
+  final String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay%3Fpa=9761630128@ybl%26pn=DisawarKing%26cu=INR";
 
   void _submitDeposit() async {
     double val = double.tryParse(_amount.text) ?? 0.0;
@@ -1519,9 +1515,9 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
               Text("Scan QR Code to Pay", style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 16)),
               SizedBox(height: 16),
               
-              // Only pure QR container (No ID text displayed)
+              // LIVE SCANNABLE QR CODE (Built-in Image, zero build-crash risk)
               Container(
-                padding: EdgeInsets.all(14),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -1529,11 +1525,19 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
                     BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4)),
                   ],
                 ),
-                child: QrImageView(
-                  data: upiPaymentData,
-                  version: QrVersions.auto,
-                  size: 210.0,
-                  backgroundColor: Colors.white,
+                child: Image.network(
+                  qrCodeUrl,
+                  height: 200,
+                  width: 200,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return SizedBox(
+                      height: 200,
+                      width: 200,
+                      child: Center(child: CircularProgressIndicator(color: Colors.amber)),
+                    );
+                  },
                 ),
               ),
               SizedBox(height: 12),
@@ -1579,7 +1583,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   }
 }
 
-// ----------------- 14. WITHDRAW SCREEN (SAVES TO FIREBASE) -----------------
+// ----------------- 14. WITHDRAW SCREEN -----------------
 class WithdrawRequestScreen extends StatefulWidget {
   @override
   _WithdrawRequestScreenState createState() => _WithdrawRequestScreenState();
@@ -1600,7 +1604,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
       return;
     }
 
-    String acct = _upiOrAccount.text.isEmpty ? "7409989270@upi" : _upiOrAccount.text;
+    String acct = _upiOrAccount.text.isEmpty ? "Direct Transfer" : _upiOrAccount.text;
     Map<String, dynamic> withData = {
       "userMobile": currentLoggedInUserMobile,
       "userName": currentLoggedInUserName,
@@ -1780,6 +1784,14 @@ class MyPlayGameScreen extends StatelessWidget {
                         SizedBox(height: 4),
                         Text("Type: ${item['type']}", style: TextStyle(color: Colors.white70, fontSize: 13)),
                         Text("Numbers: ${item['numbers']}", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        Divider(color: Colors.white12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("Time: ${item['time']}", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                            Text("Date: ${item['date']}", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                          ],
+                        )
                       ],
                     ),
                   ),
@@ -1873,7 +1885,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
           ),
           _ruleCard(
             title: "Rates & Deposit Limit",
-            text: "• कम से कम ADD MONEY: ₹50 है |\n• JODI RATE: 10 का 950 ₹\n• HARUFF RATE: 10 का 95 ₹",
+            text: "• कम से कम ADD MONEY: ₹50 है |\n• JODI RATE: 10 का 950 ₹\n• HARUFF RATE: 10 ka 95 ₹",
           ),
           _ruleCard(
             title: "Share & Earn Commission",
