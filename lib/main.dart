@@ -53,6 +53,7 @@ class DisawarKingApp extends StatelessWidget {
 // ----------------- CONFIG & GLOBALS -----------------
 String currentLoggedInUserMobile = "";
 String currentLoggedInUserName = "";
+const String adminMobile = "9761630128";
 const String officialWhatsAppNumber = "917409989270";
 
 class MarketConfig {
@@ -184,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(backgroundColor: Colors.redAccent, content: Text("Account nahi mila! Pehle Register Now karein.")),
+          const SnackBar(backgroundColor: Colors.redAccent, content: Text("Account nahi mila! Pehle Register karein.")),
         );
         return;
       }
@@ -192,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
       var data = userDoc.data()!;
       if (data['password'] != pass) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat Password! Sahi password dalein.")),
+          const SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat Password!")),
         );
         return;
       }
@@ -325,7 +326,7 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
     String pass = _passController.text.trim();
 
     if (name.isEmpty || mobile.length != 10 || pass.length < 4) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Sahi details bharein! Password min 4 digits ho.")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Sahi details bharein! Password min 4 digit ho.")));
       return;
     }
 
@@ -439,7 +440,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
     try {
       var userDoc = await FirebaseFirestore.instance.collection('users').doc(mobile).get();
       if (!userDoc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Yeh Mobile number registered nahi hai!")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Mobile number registered nahi hai!")));
         setState(() => _isLoading = false);
         return;
       }
@@ -448,7 +449,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
       generatedOtp = otp;
       setState(() => isOtpSent = true);
 
-      String msg = "Namaste DisawarKing Support, mera password reset OTP hai: $otp (Mobile: $mobile). Kripya verify karein.";
+      String msg = "Namaste DisawarKing Support, mera password reset OTP hai: $otp (Mobile: $mobile).";
       await openWhatsAppChat(message: msg);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -466,7 +467,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
       setState(() => isOtpVerified = true);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("OTP Verified! Naya password dalein.")));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat OTP! Sahi OTP dalein.")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat OTP!")));
     }
   }
 
@@ -482,7 +483,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
     setState(() => _isLoading = true);
     try {
       await FirebaseFirestore.instance.collection('users').doc(mobile).update({'password': newPass});
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Password Safalta se Badal Gaya!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Password Badal Diya Gaya! Login karein.")));
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
@@ -612,7 +613,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ----------------- 5. HOME SCREEN (100% REALTIME DB SYNC) -----------------
+// ----------------- 5. HOME SCREEN -----------------
 class HomeLiveResultsScreen extends StatefulWidget {
   @override
   _HomeLiveResultsScreenState createState() => _HomeLiveResultsScreenState();
@@ -669,16 +670,13 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                   ),
                   Row(
                     children: [
-                      // REALTIME LIVE DATABASE WALLET CONTAINER
                       StreamBuilder<DocumentSnapshot>(
                         stream: FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).snapshots(),
                         builder: (context, snapshot) {
                           double bal = 0.0;
                           if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
                             var d = snapshot.data!.data() as Map<String, dynamic>?;
-                            if (d != null && d.containsKey('balance')) {
-                              bal = (d['balance'] as num).toDouble();
-                            }
+                            if (d != null && d.containsKey('balance')) bal = (d['balance'] as num).toDouble();
                           }
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -979,31 +977,36 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
       }
     }
 
-    // Direct check from Firestore database
     var userDoc = await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).get();
     double currentBal = ((userDoc.data()?['balance'] ?? 0) as num).toDouble();
 
     if (totalAmount > currentBal) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text("Wallet balance kam hai! Pehle Add Money karein.")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text("Wallet balance kam hai!")));
       return;
     }
 
     List<String> chosenNumbers = [];
+    Map<String, int> betBreakdown = {};
+
     for (int i = 0; i < 100; i++) {
       int val = int.tryParse(_controllers[i].text) ?? 0;
       if (val > 0) {
-        String numStr = (i + 1) < 10 ? "0${i + 1}" : "${i + 1}";
+        String numStr = (i + 1) == 100 ? "00" : ((i + 1) < 10 ? "0${i + 1}" : "${i + 1}");
         chosenNumbers.add("$numStr (₹$val)");
+        betBreakdown[numStr] = val;
       }
     }
 
     Map<String, dynamic> gameData = {
       "userMobile": currentLoggedInUserMobile,
       "userName": currentLoggedInUserName,
-      "market": "${widget.market.hindiName} (${widget.market.name})",
-      "type": "Jodi (01-100)",
+      "market": widget.market.name,
+      "hindiMarket": widget.market.hindiName,
+      "type": "Jodi",
       "numbers": chosenNumbers.join(", "),
+      "betMap": betBreakdown,
       "amount": totalAmount,
+      "status": "Pending",
       "time": DateTime.now().toString().substring(11, 16),
       "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
       "timestamp": FieldValue.serverTimestamp(),
@@ -1018,7 +1021,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
       for (var c in _controllers) c.clear();
       _calculateTotal();
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Game Safalta se Lag Gaya!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Jodi Game Safalta se Lag Gaya!")));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
@@ -1053,7 +1056,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
                 itemCount: 100,
                 itemBuilder: (context, index) {
                   int num = index + 1;
-                  String displayNum = num < 10 ? "0$num" : "$num";
+                  String displayNum = num == 100 ? "00" : (num < 10 ? "0$num" : "$num");
                   return Container(
                     decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white12)),
                     padding: const EdgeInsets.all(4),
@@ -1148,13 +1151,34 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
       return;
     }
 
+    Map<String, int> andarMap = {};
+    Map<String, int> baharMap = {};
+    List<String> listStrs = [];
+
+    for (int i = 0; i < 10; i++) {
+      int a = int.tryParse(_andar[i].text) ?? 0;
+      if (a > 0) {
+        andarMap["$i"] = a;
+        listStrs.add("Andar-$i (₹$a)");
+      }
+      int b = int.tryParse(_bahar[i].text) ?? 0;
+      if (b > 0) {
+        baharMap["$i"] = b;
+        listStrs.add("Bahar-$i (₹$b)");
+      }
+    }
+
     Map<String, dynamic> gameData = {
       "userMobile": currentLoggedInUserMobile,
       "userName": currentLoggedInUserName,
-      "market": "${widget.market.hindiName} (${widget.market.name})",
-      "type": "Harup (A/B)",
-      "numbers": "Andar/Bahar Harup Selected",
+      "market": widget.market.name,
+      "hindiMarket": widget.market.hindiName,
+      "type": "Harup",
+      "numbers": listStrs.join(", "),
+      "andarMap": andarMap,
+      "baharMap": baharMap,
       "amount": total,
+      "status": "Pending",
       "time": DateTime.now().toString().substring(11, 16),
       "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
       "timestamp": FieldValue.serverTimestamp(),
@@ -1342,7 +1366,7 @@ class ResultsHistoryScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 12. WALLET SCREEN (LIVE CLOUD STREAM) -----------------
+// ----------------- 12. WALLET SCREEN -----------------
 class WalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1438,19 +1462,16 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
         'userName': currentLoggedInUserName,
         'amount': val,
         'utr': _utr.text.trim(),
-        'status': 'Approved',
+        'status': 'Pending Approval',
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      // Direct cloud wallet balance update
-      await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).set({
-        'balance': FieldValue.increment(val),
-      }, SetOptions(merge: true));
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.green, content: Text("₹$val Safalta se Wallet me Jama Ho Gaye!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(backgroundColor: Colors.green, content: Text("Deposit Request Bheji Gayi! Admin verify karke wallet me jod dega.")),
+      );
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -1517,6 +1538,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
 
       await FirebaseFirestore.instance.collection('withdrawals').add({
         "userMobile": currentLoggedInUserMobile,
+        "userName": currentLoggedInUserName,
         "amount": amt,
         "account": _upiOrAccount.text.trim(),
         "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
@@ -1528,7 +1550,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
         'balance': FieldValue.increment(-amt),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Withdrawal Request Safalta se Bheji Gayi!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Withdrawal Request Lag Gayi!")));
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
@@ -1573,6 +1595,22 @@ class MoreMenuScreen extends StatelessWidget {
       appBar: AppBar(title: const Text("More Menu")),
       body: ListView(
         children: [
+          if (currentLoggedInUserMobile == adminMobile)
+            Container(
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.amber, width: 2),
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.amber.withOpacity(0.1),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.admin_panel_settings, color: Colors.amber, size: 30),
+                title: const Text("MASTER ADMIN PANEL", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
+                subtitle: const Text("Result Ghoshan, Bets & Approval", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => MasterAdminPanelScreen())),
+              ),
+            ),
           ListTile(leading: const Icon(Icons.sports_esports, color: Color(0xFFF59E0B)), title: const Text("My Played Game"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => MyPlayGameScreen()))),
           ListTile(leading: const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFFF59E0B)), title: const Text("Withdrawal History"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => WithdrawalListScreen()))),
           ListTile(leading: const Icon(Icons.chat, color: Color(0xFF25D366)), title: const Text("Help & Support (WhatsApp)"), onTap: () => openWhatsAppChat()),
@@ -1586,7 +1624,243 @@ class MoreMenuScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 16. PERMANENT MY PLAYED GAME SCREEN -----------------
+// ----------------- 16. MASTER ADMIN PANEL (AUTOMATIC WINNING CALCULATION) -----------------
+class MasterAdminPanelScreen extends StatefulWidget {
+  @override
+  _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
+}
+
+class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  // --- AUTOMATIC WINNING DISTRIBUTION LOGIC ---
+  void _declareResultAndDistribute(BuildContext context, String marketName) {
+    final TextEditingController numCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: Text("Result: $marketName", style: const TextStyle(color: Colors.amber)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Number daalte hi automatic winning balance users ke wallet me chala jayega (Jodi 95x / Harup 9.5x).", style: TextStyle(color: Colors.white70, fontSize: 13)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: numCtrl,
+              keyboardType: TextInputType.number,
+              maxLength: 2,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.amber),
+              decoration: const InputDecoration(hintText: "84", border: OutlineInputBorder(), counterText: ""),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () async {
+              String result = numCtrl.text.trim();
+              if (result.length != 2) return;
+              Navigator.pop(ctx);
+
+              // 1. Update Result in Database
+              await FirebaseFirestore.instance.collection('results').doc(marketName).set({
+                'number': result,
+                'declaredAt': FieldValue.serverTimestamp(),
+              });
+
+              String andarDigit = result.substring(0, 1);
+              String baharDigit = result.substring(1, 2);
+
+              // 2. Fetch all pending bets for this market
+              var betsSnapshot = await FirebaseFirestore.instance
+                  .collection('bets')
+                  .where('market', isEqualTo: marketName)
+                  .where('status', isEqualTo: 'Pending')
+                  .get();
+
+              int winnersCount = 0;
+
+              for (var doc in betsSnapshot.docs) {
+                var bet = doc.data();
+                String type = bet['type'] ?? '';
+                String userMob = bet['userMobile'];
+                double winAmount = 0.0;
+
+                // Jodi Check (95x Rate)
+                if (type == "Jodi" && bet.containsKey('betMap')) {
+                  Map<String, dynamic> betMap = Map<String, dynamic>.from(bet['betMap']);
+                  if (betMap.containsKey(result)) {
+                    int betPoints = (betMap[result] as num).toInt();
+                    winAmount += (betPoints * 95).toDouble();
+                  }
+                }
+
+                // Harup Check (9.5x Rate)
+                if (type == "Harup") {
+                  if (bet.containsKey('andarMap')) {
+                    Map<String, dynamic> aMap = Map<String, dynamic>.from(bet['andarMap']);
+                    if (aMap.containsKey(andarDigit)) {
+                      int pts = (aMap[andarDigit] as num).toInt();
+                      winAmount += (pts * 9.5);
+                    }
+                  }
+                  if (bet.containsKey('baharMap')) {
+                    Map<String, dynamic> bMap = Map<String, dynamic>.from(bet['baharMap']);
+                    if (bMap.containsKey(baharDigit)) {
+                      int pts = (bMap[baharDigit] as num).toInt();
+                      winAmount += (pts * 9.5);
+                    }
+                  }
+                }
+
+                if (winAmount > 0) {
+                  winnersCount++;
+                  // Automatic wallet credit
+                  await FirebaseFirestore.instance.collection('users').doc(userMob).update({
+                    'balance': FieldValue.increment(winAmount),
+                  });
+                  await doc.reference.update({
+                    'status': 'Won ₹${winAmount.toStringAsFixed(0)}',
+                    'winningAmount': winAmount,
+                  });
+                } else {
+                  await doc.reference.update({'status': 'Lost'});
+                }
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(backgroundColor: Colors.green, content: Text("$marketName Result $result Ghosit! $winnersCount Winners ke wallet me paise transfer ho gaye.")),
+              );
+            },
+            child: const Text("Declare & Pay Winners", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Master Admin Panel"),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.amber,
+          tabs: const [
+            Tab(text: "Results"),
+            Tab(text: "Live Bets"),
+            Tab(text: "Deposits"),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // 1. Declare Results Tab
+          ListView(
+            padding: const EdgeInsets.all(12),
+            children: appMarkets.map((m) {
+              return Card(
+                color: const Color(0xFF1E293B),
+                margin: const EdgeInsets.only(bottom: 10),
+                child: ListTile(
+                  title: Text("${m.hindiName} (${m.name})", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
+                  subtitle: Text("Timing: ${m.resultTimeStr}"),
+                  trailing: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
+                    onPressed: () => _declareResultAndDistribute(context, m.name),
+                    child: const Text("Declare Number", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          // 2. All Live Bets Tab
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection('bets').orderBy('timestamp', descending: true).limit(50).snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+              var docs = snapshot.data!.docs;
+              if (docs.isEmpty) return const Center(child: Text("Koi Bet nahi lagi hai"));
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: docs.length,
+                itemBuilder: (ctx, i) {
+                  var b = docs[i].data() as Map<String, dynamic>;
+                  return Card(
+                    color: const Color(0xFF1E293B),
+                    child: ListTile(
+                      title: Text("${b['market']} - ₹${b['amount']}", style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                      subtitle: Text("User: ${b['userName']} (${b['userMobile']})\nBids: ${b['numbers']}\nStatus: ${b['status']}"),
+                      isThreeLine: true,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+
+          // 3. User Deposits Approval Tab
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection('deposits').orderBy('timestamp', descending: true).limit(50).snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+              var docs = snapshot.data!.docs;
+              if (docs.isEmpty) return const Center(child: Text("Koi Deposit request nahi hai"));
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: docs.length,
+                itemBuilder: (ctx, i) {
+                  var d = docs[i].data() as Map<String, dynamic>;
+                  String status = d['status'] ?? 'Pending';
+                  double amt = (d['amount'] as num).toDouble();
+                  String mob = d['userMobile'];
+
+                  return Card(
+                    color: const Color(0xFF1E293B),
+                    child: ListTile(
+                      title: Text("₹$amt by ${d['userName']} ($mob)", style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                      subtitle: Text("UTR: ${d['utr']}\nStatus: $status"),
+                      trailing: status == "Pending Approval"
+                          ? ElevatedButton(
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                              onPressed: () async {
+                                await docs[i].reference.update({'status': 'Approved'});
+                                await FirebaseFirestore.instance.collection('users').doc(mob).update({
+                                  'balance': FieldValue.increment(amt),
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("₹$amt Approved & Wallet Updated!")));
+                              },
+                              child: const Text("Approve", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                            )
+                          : Text(status, style: const TextStyle(color: Colors.white60)),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ----------------- 17. MY PLAYED GAME SCREEN -----------------
 class MyPlayGameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1612,6 +1886,9 @@ class MyPlayGameScreen extends StatelessWidget {
             itemCount: docs.length,
             itemBuilder: (context, index) {
               var item = docs[index].data() as Map<String, dynamic>;
+              String status = item['status'] ?? 'Pending';
+              Color stColor = status.contains('Won') ? Colors.greenAccent : (status == 'Lost' ? Colors.redAccent : Colors.amber);
+
               return Card(
                 color: const Color(0xFF1E293B),
                 margin: const EdgeInsets.only(bottom: 10),
@@ -1624,20 +1901,18 @@ class MyPlayGameScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(item['market'] ?? "Market", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 16)),
-                          Text("₹ ${item['amount'] ?? 0}", style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(item['hindiMarket'] ?? item['market'] ?? "Market", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text("₹ ${item['amount'] ?? 0}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
                       ),
                       const SizedBox(height: 6),
-                      Text("Type: ${item['type'] ?? 'Jodi'}", style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                      const SizedBox(height: 2),
-                      Text("Numbers: ${item['numbers'] ?? ''}", style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      Text("Numbers: ${item['numbers'] ?? ''}", style: const TextStyle(color: Colors.white70, fontSize: 12)),
                       const Divider(color: Colors.white12, height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("Time: ${item['time'] ?? ''}", style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                          Text("Date: ${item['date'] ?? ''}", style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                          Text("Status: $status", style: TextStyle(color: stColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                          Text("${item['date'] ?? ''} ${item['time'] ?? ''}", style: const TextStyle(color: Colors.white38, fontSize: 11)),
                         ],
                       )
                     ],
@@ -1652,7 +1927,7 @@ class MyPlayGameScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 17. PERMANENT WITHDRAWAL LIST SCREEN -----------------
+// ----------------- 18. WITHDRAWAL LIST SCREEN -----------------
 class WithdrawalListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1694,7 +1969,7 @@ class WithdrawalListScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 18. TERMS & CONDITIONS SCREEN -----------------
+// ----------------- 19. TERMS & CONDITIONS SCREEN -----------------
 class TermsAndConditionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
