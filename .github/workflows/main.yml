@@ -23,7 +23,7 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Setup Android Project, Signing & itel Fixes
+      - name: Setup Android Project & Clean Manifest
         run: |
           cp lib/main.dart /tmp/main.dart.bak
           cp pubspec.yaml /tmp/pubspec.yaml.bak
@@ -31,12 +31,50 @@ jobs:
           cp /tmp/main.dart.bak lib/main.dart
           cp /tmp/pubspec.yaml.bak pubspec.yaml
 
-          # Permissions
-          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' android/app/src/main/AndroidManifest.xml || true
-          sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' android/app/src/main/AndroidManifest.xml || true
+          # Clean & Valid AndroidManifest.xml (No corrupt tags)
+          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.disawarking.app">
 
-          # itel P55 5G Mali-G57 GPU crash prevention
-          sed -i '/<application/a \        <meta-data android:name="io.flutter.embedding.android.EnableImpeller" android:value="false" />\n        <meta-data android:name="io.flutter.embedding.android.DisableSurfaceControl" android:value="true" />' android/app/src/main/AndroidManifest.xml || true
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+              <application
+                  android:label="DisawarKingApp"
+                  android:name="${applicationName}"
+                  android:icon="@mipmap/ic_launcher"
+                  android:usesCleartextTraffic="true">
+
+                  <meta-data
+                      android:name="io.flutter.embedding.android.EnableImpeller"
+                      android:value="false" />
+                  <meta-data
+                      android:name="io.flutter.embedding.android.DisableSurfaceControl"
+                      android:value="true" />
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:theme="@style/LaunchTheme"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                      android:hardwareAccelerated="true"
+                      android:windowSoftInputMode="adjustResize">
+                      <meta-data
+                        android:name="io.flutter.embedding.android.NormalTheme"
+                        android:resource="@style/NormalTheme"
+                        />
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+                  <meta-data
+                      android:name="flutterEmbedding"
+                      android:value="2" />
+              </application>
+          </manifest>
+          EOF
 
           # google-services.json copy
           if [ -f "google-services.json" ]; then
@@ -48,40 +86,12 @@ jobs:
           sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' android/app/build.gradle || true
           sed -i '/defaultConfig {/a \        multiDexEnabled true' android/app/build.gradle || true
 
-          # Keystore signature generate for itel Package Installer
-          keytool -genkey -v -keystore android/app/release.keystore -alias disawarkey -keyalg RSA -keysize 2048 -validity 10000 -storepass disawar123 -keypass disawar123 -dname "CN=DisawarKing, OU=App, O=King, L=Delhi, S=Delhi, C=IN"
-
-          # Inject signing config into build.gradle
-          cat << 'EOF' > android/app/patch_signing.py
-          with open('android/app/build.gradle', 'r') as f:
-              data = f.read()
-
-          sign_block = """
-              signingConfigs {
-                  release {
-                      storeFile file('release.keystore')
-                      storePassword 'disawar123'
-                      keyAlias 'disawarkey'
-                      keyPassword 'disawar123'
-                      v1SigningEnabled true
-                      v2SigningEnabled true
-                  }
-              }
-          """
-          data = data.replace('buildTypes {', sign_block + '\n    buildTypes {')
-          data = data.replace('signingConfig signingConfigs.debug', 'signingConfig signingConfigs.release')
-
-          with open('android/app/build.gradle', 'w') as f:
-              f.write(data)
-          EOF
-          python3 android/app/patch_signing.py || true
-
       - name: Build Production APK
         run: |
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
 
-      - name: Upload Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: DisawarKing-App
