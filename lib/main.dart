@@ -88,8 +88,7 @@ class MarketConfig {
   }
 
   bool isWithin2Hours() {
-    DateTime now = DateTime.now();
-    Duration diff = getCloseDateTime().difference(now);
+    Duration diff = getCloseDateTime().difference(DateTime.now());
     return diff.inMinutes > 0 && diff.inMinutes <= 120;
   }
 
@@ -105,7 +104,6 @@ class MarketConfig {
   }
 }
 
-// Order matching the Chart: DSWR, DLBZ, SRGN, FRBD, GZBD, GALI
 final List<MarketConfig> appMarkets = [
   MarketConfig(name: "DISAWAR", hindiName: "दिसावर", closeHour: 4, closeMin: 00, closeTimeStr: "04:00 AM", resultTimeStr: "05:00 AM"),
   MarketConfig(name: "DELHI BAZAR", hindiName: "दिल्ली बाजार", closeHour: 14, closeMin: 50, closeTimeStr: "02:50 PM", resultTimeStr: "03:15 PM"),
@@ -156,7 +154,7 @@ Widget buildAppLogo() {
   );
 }
 
-// ----------------- SPLASH SCREEN (AUTO LOGIN CHECK) -----------------
+// ----------------- SPLASH SCREEN -----------------
 class SplashScreen extends StatefulWidget {
   @override
   _SplashScreenState createState() => _SplashScreenState();
@@ -366,7 +364,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ----------------- 2. REGISTER SCREEN -----------------
+// ----------------- 2. REGISTER SCREEN (WITH OPTIONAL REFERRAL) -----------------
 class DirectRegisterScreen extends StatefulWidget {
   @override
   _DirectRegisterScreenState createState() => _DirectRegisterScreenState();
@@ -377,6 +375,7 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
   final _mobileController = TextEditingController();
   final _passController = TextEditingController();
   final _confirmPassController = TextEditingController();
+  final _referralController = TextEditingController();
   bool _isSaving = false;
 
   void _submitRegistration() async {
@@ -384,6 +383,7 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
     String mobile = _mobileController.text.trim();
     String pass = _passController.text.trim();
     String cPass = _confirmPassController.text.trim();
+    String refCode = _referralController.text.trim();
 
     if (name.isEmpty || mobile.length != 10 || pass.length < 4) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Sahi details bharein! Password min 4 digit ho.")));
@@ -404,11 +404,30 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
         return;
       }
 
+      String? verifiedReferrer;
+      if (refCode.isNotEmpty) {
+        if (refCode == mobile) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Aap apna khud ka number referral me nahi daal sakte!")));
+          setState(() => _isSaving = false);
+          return;
+        }
+        var refDoc = await FirebaseFirestore.instance.collection('users').doc(refCode).get();
+        if (refDoc.exists) {
+          verifiedReferrer = refCode;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Referral code galat hai! Agar nahi hai toh khali chhod dein.")));
+          setState(() => _isSaving = false);
+          return;
+        }
+      }
+
       await FirebaseFirestore.instance.collection('users').doc(mobile).set({
         'name': name,
         'mobile': mobile,
         'password': pass,
         'balance': 0.0,
+        'referredBy': verifiedReferrer ?? "",
+        'referralEarnings': 0.0,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -462,6 +481,19 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
               TextField(controller: _passController, obscureText: true, decoration: const InputDecoration(labelText: "Password Banayein", border: OutlineInputBorder())),
               const SizedBox(height: 14),
               TextField(controller: _confirmPassController, obscureText: true, decoration: const InputDecoration(labelText: "Confirm Password", border: OutlineInputBorder())),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _referralController,
+                keyboardType: TextInputType.phone,
+                maxLength: 10,
+                decoration: const InputDecoration(
+                  labelText: "Referral Code (Optional - Mobile No.)",
+                  hintText: "Dost ka 10-digit mobile number",
+                  counterText: "",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.card_giftcard, color: Colors.amber),
+                ),
+              ),
               const SizedBox(height: 22),
               SizedBox(
                 width: double.infinity,
@@ -659,7 +691,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<Widget> _screens = [
     HomeLiveResultsScreen(),
     GameMarketsListScreen(),
-    CombinedAllMarketsChartScreen(), // Single Master Table Chart
+    CombinedAllMarketsChartScreen(),
     ResultsHistoryScreen(),
     WalletScreen(),
     MoreMenuScreen(),
@@ -1403,7 +1435,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   }
 }
 
-// ----------------- 11. ALL-IN-ONE COMBINED MASTER CHART SCREEN (SORTED 1 SE 31) -----------------
+// ----------------- 11. ALL-IN-ONE MASTER CHART SCREEN -----------------
 class CombinedAllMarketsChartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1412,9 +1444,7 @@ class CombinedAllMarketsChartScreen extends StatelessWidget {
         title: const Text("DisawarKing Master Chart"),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('results_history')
-            .snapshots(),
+        stream: FirebaseFirestore.instance.collection('results_history').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Colors.amber));
@@ -1442,7 +1472,7 @@ class CombinedAllMarketsChartScreen extends StatelessWidget {
             }
           }
 
-          // Date ko 1 se shuru karne ke liye Numeric Sort (01, 02, 03 ... 29)
+          // Numeric sort for clean 01, 02 ... 29 sequence
           dates.sort((a, b) {
             int numA = int.tryParse(a) ?? 0;
             int numB = int.tryParse(b) ?? 0;
@@ -1612,6 +1642,8 @@ class WalletScreen extends StatelessWidget {
                   Text("• Kam se kam ADD MONEY: ₹50", style: TextStyle(color: Colors.white70)),
                   Text("• Kam se kam WITHDRAWAL: ₹500", style: TextStyle(color: Colors.white70)),
                   Text("• Withdrawal Timing: Subah 8:00 AM se 2:00 PM tak", style: TextStyle(color: Colors.white70)),
+                  SizedBox(height: 10),
+                  Text("⚡ Withdrawal request ke 30 minute ke andar rashi transfer ho jayegi.", style: TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold)),
                 ],
               ),
             )
@@ -1693,7 +1725,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   }
 }
 
-// ----------------- 15. WITHDRAW SCREEN -----------------
+// ----------------- 15. WITHDRAW SCREEN (UPI YA BANK TRANSFER) -----------------
 class WithdrawRequestScreen extends StatefulWidget {
   @override
   _WithdrawRequestScreenState createState() => _WithdrawRequestScreenState();
@@ -1701,7 +1733,17 @@ class WithdrawRequestScreen extends StatefulWidget {
 
 class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
   final _amount = TextEditingController();
-  final _upiOrAccount = TextEditingController();
+  
+  // UPI Option
+  final _upiController = TextEditingController();
+
+  // Bank Options
+  final _bankNameController = TextEditingController();
+  final _holderNameController = TextEditingController();
+  final _accountNumController = TextEditingController();
+  final _ifscController = TextEditingController();
+
+  int _selectedMethod = 0; // 0 = UPI, 1 = Bank Transfer
   bool _isSaving = false;
 
   void _submitWithdraw() async {
@@ -1709,6 +1751,32 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
     if (amt < 500) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kam se kam ₹500 dalein!")));
       return;
+    }
+
+    String withdrawMode = "";
+    String paymentDetails = "";
+
+    if (_selectedMethod == 0) {
+      // UPI
+      if (_upiController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("UPI ID dalein!")));
+        return;
+      }
+      withdrawMode = "UPI Transfer";
+      paymentDetails = "UPI ID: ${_upiController.text.trim()}";
+    } else {
+      // Bank
+      String bName = _bankNameController.text.trim();
+      String hName = _holderNameController.text.trim();
+      String accNum = _accountNumController.text.trim();
+      String ifsc = _ifscController.text.trim().toUpperCase();
+
+      if (bName.isEmpty || hName.isEmpty || accNum.isEmpty || ifsc.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kripya bank ki saari details bharein!")));
+        return;
+      }
+      withdrawMode = "Bank Transfer";
+      paymentDetails = "Bank: $bName | A/C Holder: $hName | A/C: $accNum | IFSC: $ifsc";
     }
 
     setState(() => _isSaving = true);
@@ -1726,7 +1794,8 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
         "userMobile": currentLoggedInUserMobile,
         "userName": currentLoggedInUserName,
         "amount": amt,
-        "account": _upiOrAccount.text.trim(),
+        "method": withdrawMode,
+        "account": paymentDetails,
         "date": "${DateTime.now().day.toString().padLeft(2, '0')}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}",
         "status": "Pending",
         "timestamp": FieldValue.serverTimestamp(),
@@ -1736,7 +1805,9 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
         'balance': FieldValue.increment(-amt),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Withdrawal Request Lag Gayi!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(backgroundColor: Colors.green, content: Text("Withdrawal Request Lag Gayi! 30 minute ke andar rashi transfer ho jayegi.")),
+      );
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
@@ -1749,14 +1820,74 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Withdraw Money")),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(controller: _amount, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Withdrawal Amount (Min ₹500)", border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: _upiOrAccount, decoration: const InputDecoration(labelText: "UPI ID ya Bank Account", border: OutlineInputBorder())),
-            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.withOpacity(0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.timer, color: Colors.amberAccent, size: 28),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "Withdrawal request submit ke 30 minute ke andar rashi transfer ho jayegi.",
+                      style: TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _amount,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: "Withdrawal Amount (Min ₹500)", border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Center(child: Text("UPI ID", style: TextStyle(fontWeight: FontWeight.bold))),
+                    selected: _selectedMethod == 0,
+                    selectedColor: Colors.amber,
+                    onSelected: (val) => setState(() => _selectedMethod = 0),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Center(child: Text("Bank Transfer", style: TextStyle(fontWeight: FontWeight.bold))),
+                    selected: _selectedMethod == 1,
+                    selectedColor: Colors.amber,
+                    onSelected: (val) => setState(() => _selectedMethod = 1),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_selectedMethod == 0) ...[
+              TextField(
+                controller: _upiController,
+                decoration: const InputDecoration(labelText: "UPI ID (Jaise: 9876543210@ybl)", border: OutlineInputBorder()),
+              ),
+            ] else ...[
+              TextField(controller: _bankNameController, decoration: const InputDecoration(labelText: "Bank Ka Naam", border: OutlineInputBorder())),
+              const SizedBox(height: 10),
+              TextField(controller: _holderNameController, decoration: const InputDecoration(labelText: "Bank Me Jo Naam Hai", border: OutlineInputBorder())),
+              const SizedBox(height: 10),
+              TextField(controller: _accountNumController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Bank Account Number", border: OutlineInputBorder())),
+              const SizedBox(height: 10),
+              TextField(controller: _ifscController, decoration: const InputDecoration(labelText: "IFSC Code", border: OutlineInputBorder())),
+            ],
+            const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -1805,6 +1936,12 @@ class MoreMenuScreen extends StatelessWidget {
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => MasterAdminPanelScreen())),
               ),
             ),
+          ListTile(
+            leading: const Icon(Icons.share, color: Color(0xFFF59E0B)),
+            title: const Text("Refer & Earn (7% Commission)"),
+            subtitle: const Text("Doston ko refer karein aur 7% commission payein", style: TextStyle(color: Colors.white54, fontSize: 11)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => ReferAndEarnScreen())),
+          ),
           ListTile(leading: const Icon(Icons.sports_esports, color: Color(0xFFF59E0B)), title: const Text("My Played Game"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => MyPlayGameScreen()))),
           ListTile(leading: const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFFF59E0B)), title: const Text("Withdrawal History"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => WithdrawalListScreen()))),
           ListTile(leading: const Icon(Icons.chat, color: Color(0xFF25D366)), title: const Text("Help & Support (WhatsApp)"), onTap: () => openWhatsAppChat()),
@@ -1818,7 +1955,72 @@ class MoreMenuScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 17. MASTER ADMIN PANEL (WITH IMPORT PAST CHART DATA BUTTON) -----------------
+// ----------------- REFER & EARN SCREEN -----------------
+class ReferAndEarnScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Refer & Earn")),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.amber.withOpacity(0.3)),
+              ),
+              child: Column(
+                children: [
+                  const Icon(Icons.card_giftcard, size: 60, color: Colors.amber),
+                  const SizedBox(height: 12),
+                  const Text("Aapka Referral Code", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber),
+                    ),
+                    child: Text(
+                      currentLoggedInUserMobile,
+                      style: const TextStyle(color: Colors.amber, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Jab aapka dost aapke referral code se register karega, toh uski har ek Loss Bidding par 7% Commission sidhe aapke wallet me automatic transfer ho jayega!",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366)),
+                      icon: const Icon(Icons.share, color: Colors.white),
+                      label: const Text("SHARE ON WHATSAPP", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        String shareMsg = "Disawar King App download karein aur khelein! Register karte waqt mera Referral Code dalein: $currentLoggedInUserMobile\nDownload App: https://disawarking.app";
+                        openWhatsAppChat(message: shareMsg);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ----------------- 17. MASTER ADMIN PANEL (AUTOMATIC 7% LOSS COMMISSION TO REFERRER) -----------------
 class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
@@ -1834,11 +2036,9 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
     _tabController = TabController(length: 3, vsync: this);
   }
 
-  // 1 Click function to bulk upload the exact 29-day chart data
   void _importPastChartData() async {
     setState(() => _isImporting = true);
 
-    // Exact data extracted from your chart image (Single digits formatted with leading 0)
     final List<Map<String, dynamic>> rawChart = [
       {"date": "01", "DSWR": "", "DLBZ": "58", "SRGN": "89", "FRBD": "45", "GZBD": "86", "GALI": "81"},
       {"date": "02", "DSWR": "69", "DLBZ": "52", "SRGN": "54", "FRBD": "19", "GZBD": "85", "GALI": "96"},
@@ -1923,7 +2123,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text("Number daalte hi winners ke wallet me winning balance credit hoga aur Chart me permanent date-wise save ho jayega.", style: TextStyle(color: Colors.white70, fontSize: 13)),
+            const Text("Number ghosit hote hi winning amount credit ho jayegi aur 7% referral loss commission referrer ke wallet me automatic transfer ho jayega.", style: TextStyle(color: Colors.white70, fontSize: 13)),
             const SizedBox(height: 12),
             TextField(
               controller: numCtrl,
@@ -1972,26 +2172,39 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
               for (var doc in betsSnapshot.docs) {
                 var bet = doc.data();
                 String type = bet['type'] ?? '';
-                String userMob = bet['userMobile'];
+                String userMob = bet['userMobile'] ?? '';
+                String numbersStr = bet['numbers']?.toString() ?? '';
+                double betAmt = ((bet['amount'] ?? 0) as num).toDouble();
                 double winAmount = 0.0;
 
-                if (type == "Jodi" && bet.containsKey('betMap')) {
-                  Map<String, dynamic> betMap = Map<String, dynamic>.from(bet['betMap']);
-                  if (betMap.containsKey(result)) {
-                    int betPoints = (betMap[result] as num).toInt();
-                    winAmount += (betPoints * 95).toDouble();
+                // Jodi Check (Dono methods: betMap aur Text String check)
+                if (type == "Jodi") {
+                  if (bet.containsKey('betMap') && bet['betMap'] != null) {
+                    Map<String, dynamic> betMap = Map<String, dynamic>.from(bet['betMap']);
+                    if (betMap.containsKey(result)) {
+                      int betPoints = (betMap[result] as num).toInt();
+                      winAmount += (betPoints * 95).toDouble();
+                    }
+                  } else if (numbersStr.contains(result)) {
+                    RegExp regex = RegExp('$result\\s*\\(₹?([0-9]+)\\)');
+                    var match = regex.firstMatch(numbersStr);
+                    int pts = match != null ? int.parse(match.group(1)!) : 0;
+                    if (pts > 0) {
+                      winAmount += (pts * 95).toDouble();
+                    }
                   }
                 }
 
+                // Harup Check
                 if (type == "Harup") {
-                  if (bet.containsKey('andarMap')) {
+                  if (bet.containsKey('andarMap') && bet['andarMap'] != null) {
                     Map<String, dynamic> aMap = Map<String, dynamic>.from(bet['andarMap']);
                     if (aMap.containsKey(andarDigit)) {
                       int pts = (aMap[andarDigit] as num).toInt();
                       winAmount += (pts * 9.5);
                     }
                   }
-                  if (bet.containsKey('baharMap')) {
+                  if (bet.containsKey('baharMap') && bet['baharMap'] != null) {
                     Map<String, dynamic> bMap = Map<String, dynamic>.from(bet['baharMap']);
                     if (bMap.containsKey(baharDigit)) {
                       int pts = (bMap[baharDigit] as num).toInt();
@@ -2000,17 +2213,50 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                   }
                 }
 
-                if (winAmount > 0) {
+                // Distribution & 7% Referral Commission Logic
+                if (winAmount > 0 && userMob.isNotEmpty) {
                   winnersCount++;
-                  await FirebaseFirestore.instance.collection('users').doc(userMob).update({
-                    'balance': FieldValue.increment(winAmount),
-                  });
-                  await doc.reference.update({
-                    'status': 'Won ₹${winAmount.toStringAsFixed(0)}',
-                    'winningAmount': winAmount,
-                  });
+                  try {
+                    await FirebaseFirestore.instance.collection('users').doc(userMob).set({
+                      'balance': FieldValue.increment(winAmount),
+                    }, SetOptions(merge: true));
+
+                    await doc.reference.update({
+                      'status': 'Won ₹${winAmount.toStringAsFixed(0)}',
+                      'winningAmount': winAmount,
+                    });
+                  } catch (e) {
+                    debugPrint("Credit Error: $e");
+                  }
                 } else {
+                  // User LOST this bet
                   await doc.reference.update({'status': 'Lost'});
+
+                  // 7% Referral Commission Transfer
+                  try {
+                    var uDoc = await FirebaseFirestore.instance.collection('users').doc(userMob).get();
+                    if (uDoc.exists) {
+                      String refMobile = uDoc.data()?['referredBy'] ?? '';
+                      if (refMobile.isNotEmpty && betAmt > 0) {
+                        double commission = (betAmt * 0.07); // 7% of loss amount
+                        await FirebaseFirestore.instance.collection('users').doc(refMobile).set({
+                          'balance': FieldValue.increment(commission),
+                          'referralEarnings': FieldValue.increment(commission),
+                        }, SetOptions(merge: true));
+
+                        await FirebaseFirestore.instance.collection('referral_commissions').add({
+                          'fromUser': userMob,
+                          'toReferrer': refMobile,
+                          'betAmount': betAmt,
+                          'commission': commission,
+                          'market': marketName,
+                          'timestamp': FieldValue.serverTimestamp(),
+                        });
+                      }
+                    }
+                  } catch (e) {
+                    debugPrint("Commission Error: $e");
+                  }
                 }
               }
 
@@ -2046,7 +2292,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
           ListView(
             padding: const EdgeInsets.all(12),
             children: [
-              // One-click button to upload your provided chart data into Firebase
               Container(
                 margin: const EdgeInsets.only(bottom: 14),
                 decoration: BoxDecoration(
@@ -2249,11 +2494,12 @@ class WithdrawalListScreen extends StatelessWidget {
             itemCount: docs.length,
             itemBuilder: (context, index) {
               var item = docs[index].data() as Map<String, dynamic>;
+              String m = item['method'] ?? 'Transfer';
               return Card(
                 color: const Color(0xFF1E293B),
                 child: ListTile(
-                  title: Text("₹ ${item['amount'] ?? 0}", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 18)),
-                  subtitle: Text("A/C: ${item['account'] ?? ''}\nStatus: ${item['status'] ?? 'Pending'}", style: const TextStyle(color: Colors.white70)),
+                  title: Text("₹ ${item['amount'] ?? 0} ($m)", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 16)),
+                  subtitle: Text("Details: ${item['account'] ?? ''}\nStatus: ${item['status'] ?? 'Pending'}", style: const TextStyle(color: Colors.white70)),
                   trailing: Text(item['date'] ?? '', style: const TextStyle(color: Colors.white38, fontSize: 12)),
                 ),
               );
@@ -2273,7 +2519,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text("Terms & Conditions")),
       body: const Padding(
         padding: EdgeInsets.all(16),
-        child: Text("• Antim 2 ghante me max ₹200 limit lagti hai.\n• Min Add Money ₹50, Min Withdrawal ₹500.\n• Withdrawal timing: Subah 8:00 AM se 2:00 PM tak.", style: TextStyle(fontSize: 14, height: 1.6, color: Colors.white70)),
+        child: Text("• Antim 2 ghante me max ₹200 limit lagti hai.\n• Min Add Money ₹50, Min Withdrawal ₹500.\n• Withdrawal timing: Subah 8:00 AM se 2:00 PM tak.\n• Withdrawal rashi 30 minute ke andar transfer kar di jaati hai.\n• Referral commission: Loss bidding par 7% seedha wallet me judta hai.", style: TextStyle(fontSize: 14, height: 1.6, color: Colors.white70)),
       ),
     );
   }
