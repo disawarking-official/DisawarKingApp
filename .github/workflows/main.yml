@@ -23,7 +23,7 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Setup Android Project & Permissions
+      - name: Setup Android Project, Signing & itel Fixes
         run: |
           cp lib/main.dart /tmp/main.dart.bak
           cp pubspec.yaml /tmp/pubspec.yaml.bak
@@ -31,26 +31,57 @@ jobs:
           cp /tmp/main.dart.bak lib/main.dart
           cp /tmp/pubspec.yaml.bak pubspec.yaml
 
-          # Permissions & Cleartext Traffic (itel / Android 13 fix)
+          # Permissions
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' android/app/src/main/AndroidManifest.xml || true
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' android/app/src/main/AndroidManifest.xml || true
+
+          # itel P55 5G Mali-G57 GPU crash prevention
+          sed -i '/<application/a \        <meta-data android:name="io.flutter.embedding.android.EnableImpeller" android:value="false" />\n        <meta-data android:name="io.flutter.embedding.android.DisableSurfaceControl" android:value="true" />' android/app/src/main/AndroidManifest.xml || true
 
           # google-services.json copy
           if [ -f "google-services.json" ]; then
             cp google-services.json android/app/ || true
           fi
 
-          # minSdk 21 fix & MultiDex
+          # minSdk 21 & MultiDex
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle || true
           sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' android/app/build.gradle || true
           sed -i '/defaultConfig {/a \        multiDexEnabled true' android/app/build.gradle || true
 
-      - name: Build APK for All Devices (Universal)
+          # Keystore signature generate for itel Package Installer
+          keytool -genkey -v -keystore android/app/release.keystore -alias disawarkey -keyalg RSA -keysize 2048 -validity 10000 -storepass disawar123 -keypass disawar123 -dname "CN=DisawarKing, OU=App, O=King, L=Delhi, S=Delhi, C=IN"
+
+          # Inject signing config into build.gradle
+          cat << 'EOF' > android/app/patch_signing.py
+          with open('android/app/build.gradle', 'r') as f:
+              data = f.read()
+
+          sign_block = """
+              signingConfigs {
+                  release {
+                      storeFile file('release.keystore')
+                      storePassword 'disawar123'
+                      keyAlias 'disawarkey'
+                      keyPassword 'disawar123'
+                      v1SigningEnabled true
+                      v2SigningEnabled true
+                  }
+              }
+          """
+          data = data.replace('buildTypes {', sign_block + '\n    buildTypes {')
+          data = data.replace('signingConfig signingConfigs.debug', 'signingConfig signingConfigs.release')
+
+          with open('android/app/build.gradle', 'w') as f:
+              f.write(data)
+          EOF
+          python3 android/app/patch_signing.py || true
+
+      - name: Build Production APK
         run: |
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
 
-      - name: Upload APK
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: DisawarKing-App
