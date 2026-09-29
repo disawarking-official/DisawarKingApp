@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +46,7 @@ class DisawarKingApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Color(0xFFF59E0B)),
         ),
       ),
-      home: LoginScreen(),
+      home: SplashScreen(),
     );
   }
 }
@@ -104,13 +105,14 @@ class MarketConfig {
   }
 }
 
+// Order matching the Chart: DSWR, DLBZ, SRGN, FRBD, GZBD, GALI
 final List<MarketConfig> appMarkets = [
+  MarketConfig(name: "DISAWAR", hindiName: "दिसावर", closeHour: 4, closeMin: 00, closeTimeStr: "04:00 AM", resultTimeStr: "05:00 AM"),
   MarketConfig(name: "DELHI BAZAR", hindiName: "दिल्ली बाजार", closeHour: 14, closeMin: 50, closeTimeStr: "02:50 PM", resultTimeStr: "03:15 PM"),
   MarketConfig(name: "SHREE GANESH", hindiName: "श्री गणेश", closeHour: 16, closeMin: 00, closeTimeStr: "04:00 PM", resultTimeStr: "04:30 PM"),
   MarketConfig(name: "FARIDABAD", hindiName: "फ़रीदाबाद", closeHour: 17, closeMin: 50, closeTimeStr: "05:50 PM", resultTimeStr: "06:15 PM"),
   MarketConfig(name: "GHAZIABAD", hindiName: "गाज़ियाबाद", closeHour: 21, closeMin: 20, closeTimeStr: "09:20 PM", resultTimeStr: "09:45 PM"),
   MarketConfig(name: "GALI", hindiName: "गली", closeHour: 23, closeMin: 25, closeTimeStr: "11:25 PM", resultTimeStr: "11:55 PM"),
-  MarketConfig(name: "DISAWAR", hindiName: "दिसावर", closeHour: 4, closeMin: 00, closeTimeStr: "04:00 AM", resultTimeStr: "05:00 AM"),
 ];
 
 Future<void> openWhatsAppChat({String message = "Namaste DisawarKing Support, mujhe sahayata chahiye."}) async {
@@ -152,6 +154,58 @@ Widget buildAppLogo() {
       const Text("Official Gaming Platform", style: TextStyle(color: Colors.white70, fontSize: 12)),
     ],
   );
+}
+
+// ----------------- SPLASH SCREEN (AUTO LOGIN CHECK) -----------------
+class SplashScreen extends StatefulWidget {
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkRememberLogin();
+  }
+
+  void _checkRememberLogin() async {
+    await Future.delayed(const Duration(milliseconds: 1000));
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? savedMobile = prefs.getString('saved_mobile');
+      String? savedName = prefs.getString('saved_name');
+
+      if (savedMobile != null && savedMobile.length == 10) {
+        currentLoggedInUserMobile = savedMobile;
+        currentLoggedInUserName = savedName ?? "User";
+        if (mounted) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => MainNavigationScreen()));
+          return;
+        }
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => LoginScreen()));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            buildAppLogo(),
+            const SizedBox(height: 30),
+            const CircularProgressIndicator(color: Colors.amber),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ----------------- 1. LOGIN SCREEN -----------------
@@ -200,6 +254,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       currentLoggedInUserMobile = mobile;
       currentLoggedInUserName = data['name'] ?? "User";
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_mobile', mobile);
+      await prefs.setString('saved_name', currentLoggedInUserName);
 
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MainNavigationScreen()));
     } catch (e) {
@@ -318,15 +376,22 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
   final _nameController = TextEditingController();
   final _mobileController = TextEditingController();
   final _passController = TextEditingController();
+  final _confirmPassController = TextEditingController();
   bool _isSaving = false;
 
   void _submitRegistration() async {
     String name = _nameController.text.trim();
     String mobile = _mobileController.text.trim();
     String pass = _passController.text.trim();
+    String cPass = _confirmPassController.text.trim();
 
     if (name.isEmpty || mobile.length != 10 || pass.length < 4) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Sahi details bharein! Password min 4 digit ho.")));
+      return;
+    }
+
+    if (pass != cPass) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Password aur Confirm Password match nahi huye!")));
       return;
     }
 
@@ -395,6 +460,8 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
               TextField(controller: _mobileController, keyboardType: TextInputType.phone, maxLength: 10, decoration: const InputDecoration(labelText: "Mobile Number", counterText: "", border: OutlineInputBorder())),
               const SizedBox(height: 14),
               TextField(controller: _passController, obscureText: true, decoration: const InputDecoration(labelText: "Password Banayein", border: OutlineInputBorder())),
+              const SizedBox(height: 14),
+              TextField(controller: _confirmPassController, obscureText: true, decoration: const InputDecoration(labelText: "Confirm Password", border: OutlineInputBorder())),
               const SizedBox(height: 22),
               SizedBox(
                 width: double.infinity,
@@ -413,7 +480,7 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
   }
 }
 
-// ----------------- 3. FORGOT PASSWORD WITH OTP -----------------
+// ----------------- 3. FORGOT PASSWORD SCREEN -----------------
 class DirectResetPasswordScreen extends StatefulWidget {
   @override
   _DirectResetPasswordScreenState createState() => _DirectResetPasswordScreenState();
@@ -423,6 +490,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   final _mobileController = TextEditingController();
   final _otpController = TextEditingController();
   final _newPassController = TextEditingController();
+  final _confirmPassController = TextEditingController();
 
   String? generatedOtp;
   bool isOtpSent = false;
@@ -432,7 +500,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   void _sendWhatsAppOtp() async {
     String mobile = _mobileController.text.trim();
     if (mobile.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("10 anko ka Mobile Number dalein!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("10 anko ka Registered Mobile Number dalein!")));
       return;
     }
 
@@ -440,7 +508,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
     try {
       var userDoc = await FirebaseFirestore.instance.collection('users').doc(mobile).get();
       if (!userDoc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Mobile number registered nahi hai!")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Mobile number registered nahi mila!")));
         setState(() => _isLoading = false);
         return;
       }
@@ -449,11 +517,11 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
       generatedOtp = otp;
       setState(() => isOtpSent = true);
 
-      String msg = "Namaste DisawarKing Support, mera password reset OTP hai: $otp (Mobile: $mobile).";
+      String msg = "Namaste DisawarKing Support, mera registered mobile $mobile hai. Password reset OTP code hai: $otp";
       await openWhatsAppChat(message: msg);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.green, content: Text("OTP WhatsApp par bhej diya gaya hai! Code: $otp")),
+        SnackBar(backgroundColor: Colors.green, content: Text("OTP bhej diya gaya hai! WhatsApp check karein: $otp")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
@@ -463,20 +531,28 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   }
 
   void _verifyOtp() {
-    if (_otpController.text.trim() == generatedOtp) {
+    if (_otpController.text.trim().isNotEmpty && _otpController.text.trim() == generatedOtp) {
       setState(() => isOtpVerified = true);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("OTP Verified! Naya password dalein.")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("OTP Verified! Naya password set karein.")));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Galat OTP!")));
     }
   }
 
   void _resetPassword() async {
+    if (!isOtpVerified) return;
+
     String mobile = _mobileController.text.trim();
     String newPass = _newPassController.text.trim();
+    String cPass = _confirmPassController.text.trim();
 
     if (newPass.length < 4) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Naya Password min 4 digit ho!")));
+      return;
+    }
+
+    if (newPass != cPass) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Dono password match nahi huye!")));
       return;
     }
 
@@ -508,7 +584,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("WhatsApp OTP Password Reset", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
+              const Text("OTP Password Reset", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
               const SizedBox(height: 16),
               TextField(
                 controller: _mobileController,
@@ -525,7 +601,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366)),
                     onPressed: _isLoading ? null : _sendWhatsAppOtp,
-                    child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("GET OTP ON WHATSAPP", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("SEND OTP CODE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
               if (isOtpSent && !isOtpVerified) ...[
@@ -534,7 +610,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
                   controller: _otpController,
                   keyboardType: TextInputType.number,
                   maxLength: 4,
-                  decoration: const InputDecoration(labelText: "4-Digit OTP Dalein", counterText: "", border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: "4-Digit OTP Code Dalein", counterText: "", border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
@@ -549,19 +625,17 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
               ],
               if (isOtpVerified) ...[
                 const SizedBox(height: 14),
-                TextField(
-                  controller: _newPassController,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: "Naya Password Dalein", border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 16),
+                TextField(controller: _newPassController, obscureText: true, decoration: const InputDecoration(labelText: "New Password", border: OutlineInputBorder())),
+                const SizedBox(height: 14),
+                TextField(controller: _confirmPassController, obscureText: true, decoration: const InputDecoration(labelText: "Confirm Password", border: OutlineInputBorder())),
+                const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
                   height: 46,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
                     onPressed: _isLoading ? null : _resetPassword,
-                    child: _isLoading ? const CircularProgressIndicator(color: Colors.black) : const Text("UPDATE PASSWORD", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                    child: _isLoading ? const CircularProgressIndicator(color: Colors.black) : const Text("CONFIRM & SAVE PASSWORD", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ]
@@ -573,7 +647,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   }
 }
 
-// ----------------- 4. MAIN BOTTOM NAVIGATION (WITH CHART TAB) -----------------
+// ----------------- 4. MAIN BOTTOM NAVIGATION -----------------
 class MainNavigationScreen extends StatefulWidget {
   @override
   _MainNavigationScreenState createState() => _MainNavigationScreenState();
@@ -585,7 +659,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<Widget> _screens = [
     HomeLiveResultsScreen(),
     GameMarketsListScreen(),
-    MarketChartListScreen(), // New Games Chart List
+    CombinedAllMarketsChartScreen(), // Single Master Table Chart
     ResultsHistoryScreen(),
     WalletScreen(),
     MoreMenuScreen(),
@@ -1010,7 +1084,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
       "amount": totalAmount,
       "status": "Pending",
       "time": DateTime.now().toString().substring(11, 16),
-      "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
+      "date": "${DateTime.now().day.toString().padLeft(2, '0')}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}",
       "timestamp": FieldValue.serverTimestamp(),
     };
 
@@ -1182,7 +1256,7 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
       "amount": total,
       "status": "Pending",
       "time": DateTime.now().toString().substring(11, 16),
-      "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
+      "date": "${DateTime.now().day.toString().padLeft(2, '0')}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}",
       "timestamp": FieldValue.serverTimestamp(),
     };
 
@@ -1329,36 +1403,102 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   }
 }
 
-// ----------------- 11. MARKET CHART LIST SCREEN (NEW CHART FEATURE) -----------------
-class MarketChartListScreen extends StatelessWidget {
+// ----------------- 11. ALL-IN-ONE COMBINED MASTER CHART SCREEN -----------------
+class CombinedAllMarketsChartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Game Result Charts")),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(12),
-        itemCount: appMarkets.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final m = appMarkets[index];
-          return Card(
-            color: const Color(0xFF1E293B),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.amber.withOpacity(0.15), shape: BoxShape.circle),
-                child: const Icon(Icons.table_view_rounded, color: Color(0xFFF59E0B)),
+      appBar: AppBar(
+        title: const Text("DisawarKing Master Chart"),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('results_history')
+            .orderBy('timestamp', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Colors.amber));
+          }
+
+          List<String> dates = [];
+          Map<String, Map<String, String>> chartMap = {};
+
+          if (snapshot.hasData) {
+            for (var doc in snapshot.data!.docs) {
+              var data = doc.data() as Map<String, dynamic>;
+              String dt = data['date'] ?? '';
+              String market = data['market'] ?? '';
+              String number = data['number'] ?? 'XX';
+
+              if (dt.isNotEmpty) {
+                if (!dates.contains(dt)) {
+                  dates.add(dt);
+                }
+                if (!chartMap.containsKey(dt)) {
+                  chartMap[dt] = {};
+                }
+                chartMap[dt]![market] = number;
+              }
+            }
+          }
+
+          if (dates.isEmpty) {
+            return const Center(
+              child: Text("Abhi Chart ka koi record nahi hai.", style: TextStyle(color: Colors.white54, fontSize: 14)),
+            );
+          }
+
+          return SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowHeight: 48,
+                dataRowHeight: 44,
+                headingRowColor: MaterialStateProperty.all(const Color(0xFF1E293B)),
+                dataRowColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+                  return const Color(0xFF0F172A);
+                }),
+                border: TableBorder.all(color: Colors.amber.withOpacity(0.3), width: 1),
+                columns: [
+                  const DataColumn(
+                    label: Text("DATE", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13)),
+                  ),
+                  ...appMarkets.map((m) => DataColumn(
+                        label: Text(m.name, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12)),
+                      )),
+                ],
+                rows: dates.map((d) {
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(d, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
+                      ...appMarkets.map((m) {
+                        String res = chartMap[d]?[m.name] ?? "--";
+                        return DataCell(
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: res == "--" ? Colors.transparent : Colors.amber.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                res,
+                                style: TextStyle(
+                                  color: res == "--" ? Colors.white38 : Colors.amber,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  );
+                }).toList(),
               ),
-              title: Text("${m.hindiName} (${m.name})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-              subtitle: Text("Rozana Result Time: ${m.resultTimeStr}", style: const TextStyle(color: Colors.white54, fontSize: 12)),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.amber),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (c) => SingleMarketChartDetailsScreen(market: m)),
-                );
-              },
             ),
           );
         },
@@ -1367,108 +1507,7 @@ class MarketChartListScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 12. SINGLE MARKET DETAILED RESULT CHART -----------------
-class SingleMarketChartDetailsScreen extends StatelessWidget {
-  final MarketConfig market;
-  SingleMarketChartDetailsScreen({required this.market});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("${market.hindiName} Chart")),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            color: const Color(0xFF1E293B),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Result History: ${market.name}", style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 15)),
-                Text("Time: ${market.resultTimeStr}", style: const TextStyle(color: Colors.white70, fontSize: 12)),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            color: const Color(0xFF0F172A),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("DATE (Din)", style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 13)),
-                Text("OPEN NUMBER", style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 13)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('results_history')
-                  .where('market', isEqualTo: market.name)
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text("Abhi is game ka koi purana record nahi hai", style: TextStyle(color: Colors.white54, fontSize: 14)),
-                  );
-                }
-
-                var docs = snapshot.data!.docs;
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: docs.length,
-                  itemBuilder: (ctx, i) {
-                    var data = docs[i].data() as Map<String, dynamic>;
-                    String dt = data['date'] ?? '';
-                    String num = data['number'] ?? 'XX';
-
-                    return Card(
-                      color: const Color(0xFF1E293B),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.calendar_month, color: Colors.white54, size: 18),
-                                const SizedBox(width: 8),
-                                Text(dt, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500)),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF59E0B),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                num,
-                                style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 20),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ----------------- 13. RESULTS SCREEN -----------------
+// ----------------- 12. RESULTS SCREEN -----------------
 class ResultsHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1507,7 +1546,7 @@ class ResultsHistoryScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 14. WALLET SCREEN -----------------
+// ----------------- 13. WALLET SCREEN -----------------
 class WalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1577,7 +1616,7 @@ class WalletScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 15. ADD MONEY SCREEN -----------------
+// ----------------- 14. ADD MONEY SCREEN -----------------
 class AddMoneyPaymentScreen extends StatefulWidget {
   @override
   _AddMoneyPaymentScreenState createState() => _AddMoneyPaymentScreenState();
@@ -1648,7 +1687,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   }
 }
 
-// ----------------- 16. WITHDRAW SCREEN -----------------
+// ----------------- 15. WITHDRAW SCREEN -----------------
 class WithdrawRequestScreen extends StatefulWidget {
   @override
   _WithdrawRequestScreenState createState() => _WithdrawRequestScreenState();
@@ -1682,7 +1721,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
         "userName": currentLoggedInUserName,
         "amount": amt,
         "account": _upiOrAccount.text.trim(),
-        "date": "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}",
+        "date": "${DateTime.now().day.toString().padLeft(2, '0')}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}",
         "status": "Pending",
         "timestamp": FieldValue.serverTimestamp(),
       });
@@ -1728,8 +1767,16 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
   }
 }
 
-// ----------------- 17. MORE MENU SCREEN -----------------
+// ----------------- 16. MORE MENU SCREEN -----------------
 class MoreMenuScreen extends StatelessWidget {
+  void _logout(BuildContext context) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    currentLoggedInUserMobile = "";
+    currentLoggedInUserName = "";
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => LoginScreen()));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1747,7 +1794,7 @@ class MoreMenuScreen extends StatelessWidget {
               child: ListTile(
                 leading: const Icon(Icons.admin_panel_settings, color: Colors.amber, size: 30),
                 title: const Text("MASTER ADMIN PANEL", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
-                subtitle: const Text("Result Ghoshan, Bets & Approval", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                subtitle: const Text("Result Ghoshan, Bets & Upload Chart", style: TextStyle(color: Colors.white70, fontSize: 12)),
                 trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => MasterAdminPanelScreen())),
               ),
@@ -1758,14 +1805,14 @@ class MoreMenuScreen extends StatelessWidget {
           ListTile(leading: const Icon(Icons.lock_reset, color: Color(0xFFF59E0B)), title: const Text("Change Password"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => DirectResetPasswordScreen()))),
           ListTile(leading: const Icon(Icons.description, color: Color(0xFFF59E0B)), title: const Text("Terms & Conditions"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => TermsAndConditionsScreen()))),
           const Divider(),
-          ListTile(leading: const Icon(Icons.power_settings_new, color: Colors.red), title: const Text("Logout", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)), onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => LoginScreen()))),
+          ListTile(leading: const Icon(Icons.power_settings_new, color: Colors.red), title: const Text("Logout", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)), onTap: () => _logout(context)),
         ],
       ),
     );
   }
 }
 
-// ----------------- 18. MASTER ADMIN PANEL (AUTOMATIC WINNING & HISTORY CHART SAVER) -----------------
+// ----------------- 17. MASTER ADMIN PANEL (WITH IMPORT PAST CHART DATA BUTTON) -----------------
 class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
@@ -1773,11 +1820,90 @@ class MasterAdminPanelScreen extends StatefulWidget {
 
 class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isImporting = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+  }
+
+  // 1 Click function to bulk upload the exact 29-day chart data
+  void _importPastChartData() async {
+    setState(() => _isImporting = true);
+
+    // Exact data extracted from your chart image (Single digits formatted with leading 0)
+    final List<Map<String, dynamic>> rawChart = [
+      {"date": "01", "DSWR": "", "DLBZ": "58", "SRGN": "89", "FRBD": "45", "GZBD": "86", "GALI": "81"},
+      {"date": "02", "DSWR": "69", "DLBZ": "52", "SRGN": "54", "FRBD": "19", "GZBD": "85", "GALI": "96"},
+      {"date": "03", "DSWR": "57", "DLBZ": "88", "SRGN": "20", "FRBD": "08", "GZBD": "32", "GALI": "77"},
+      {"date": "04", "DSWR": "95", "DLBZ": "18", "SRGN": "01", "FRBD": "02", "GZBD": "95", "GALI": "26"},
+      {"date": "05", "DSWR": "59", "DLBZ": "44", "SRGN": "02", "FRBD": "30", "GZBD": "68", "GALI": "37"},
+      {"date": "06", "DSWR": "78", "DLBZ": "71", "SRGN": "25", "FRBD": "88", "GZBD": "69", "GALI": "94"},
+      {"date": "07", "DSWR": "67", "DLBZ": "61", "SRGN": "17", "FRBD": "02", "GZBD": "02", "GALI": "10"},
+      {"date": "08", "DSWR": "92", "DLBZ": "84", "SRGN": "83", "FRBD": "71", "GZBD": "93", "GALI": "64"},
+      {"date": "09", "DSWR": "54", "DLBZ": "18", "SRGN": "15", "FRBD": "29", "GZBD": "93", "GALI": "69"},
+      {"date": "10", "DSWR": "93", "DLBZ": "52", "SRGN": "12", "FRBD": "15", "GZBD": "72", "GALI": "40"},
+      {"date": "11", "DSWR": "40", "DLBZ": "59", "SRGN": "32", "FRBD": "72", "GZBD": "98", "GALI": "34"},
+      {"date": "12", "DSWR": "46", "DLBZ": "81", "SRGN": "42", "FRBD": "65", "GZBD": "16", "GALI": "35"},
+      {"date": "13", "DSWR": "02", "DLBZ": "55", "SRGN": "48", "FRBD": "74", "GZBD": "47", "GALI": "72"},
+      {"date": "14", "DSWR": "35", "DLBZ": "86", "SRGN": "34", "FRBD": "30", "GZBD": "50", "GALI": "87"},
+      {"date": "15", "DSWR": "89", "DLBZ": "46", "SRGN": "28", "FRBD": "24", "GZBD": "19", "GALI": "83"},
+      {"date": "16", "DSWR": "31", "DLBZ": "68", "SRGN": "94", "FRBD": "21", "GZBD": "42", "GALI": "91"},
+      {"date": "17", "DSWR": "90", "DLBZ": "99", "SRGN": "50", "FRBD": "38", "GZBD": "34", "GALI": "73"},
+      {"date": "18", "DSWR": "49", "DLBZ": "84", "SRGN": "38", "FRBD": "36", "GZBD": "03", "GALI": "50"},
+      {"date": "19", "DSWR": "35", "DLBZ": "24", "SRGN": "20", "FRBD": "21", "GZBD": "86", "GALI": "07"},
+      {"date": "20", "DSWR": "32", "DLBZ": "47", "SRGN": "80", "FRBD": "84", "GZBD": "24", "GALI": "66"},
+      {"date": "21", "DSWR": "01", "DLBZ": "62", "SRGN": "08", "FRBD": "71", "GZBD": "70", "GALI": "32"},
+      {"date": "22", "DSWR": "73", "DLBZ": "03", "SRGN": "98", "FRBD": "42", "GZBD": "50", "GALI": "00"},
+      {"date": "23", "DSWR": "35", "DLBZ": "92", "SRGN": "10", "FRBD": "00", "GZBD": "42", "GALI": "02"},
+      {"date": "24", "DSWR": "26", "DLBZ": "27", "SRGN": "48", "FRBD": "38", "GZBD": "32", "GALI": "90"},
+      {"date": "25", "DSWR": "86", "DLBZ": "44", "SRGN": "68", "FRBD": "08", "GZBD": "63", "GALI": "37"},
+      {"date": "26", "DSWR": "48", "DLBZ": "55", "SRGN": "43", "FRBD": "09", "GZBD": "18", "GALI": "66"},
+      {"date": "27", "DSWR": "81", "DLBZ": "35", "SRGN": "07", "FRBD": "61", "GZBD": "66", "GALI": "64"},
+      {"date": "28", "DSWR": "49", "DLBZ": "66", "SRGN": "90", "FRBD": "58", "GZBD": "03", "GALI": "03"},
+      {"date": "29", "DSWR": "43", "DLBZ": "", "SRGN": "", "FRBD": "", "GZBD": "", "GALI": ""},
+    ];
+
+    try {
+      final batch = FirebaseFirestore.instance.batch();
+      final historyCol = FirebaseFirestore.instance.collection('results_history');
+
+      for (var row in rawChart) {
+        String dt = row['date'];
+        int dayNum = int.parse(dt);
+        DateTime fakeTimestamp = DateTime(2026, 9, dayNum, 12, 0);
+
+        void addEntry(String market, String num) {
+          if (num.isNotEmpty) {
+            var docRef = historyCol.doc("${dt}_$market");
+            batch.set(docRef, {
+              'market': market,
+              'number': num,
+              'date': dt,
+              'timestamp': Timestamp.fromDate(fakeTimestamp),
+            });
+          }
+        }
+
+        addEntry("DISAWAR", row['DSWR']);
+        addEntry("DELHI BAZAR", row['DLBZ']);
+        addEntry("SHREE GANESH", row['SRGN']);
+        addEntry("FARIDABAD", row['FRBD']);
+        addEntry("GHAZIABAD", row['GZBD']);
+        addEntry("GALI", row['GALI']);
+      }
+
+      await batch.commit();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(backgroundColor: Colors.green, content: Text("29 Dinon Ka Pura Chart Safalta Se Upload Ho Gaya!")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
   }
 
   void _declareResultAndDistribute(BuildContext context, String marketName) {
@@ -1812,16 +1938,14 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
               if (result.length != 2) return;
               Navigator.pop(ctx);
 
-              String todayDate = "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}";
+              String todayDate = "${DateTime.now().day.toString().padLeft(2, '0')}";
 
-              // 1. Live Result update
               await FirebaseFirestore.instance.collection('results').doc(marketName).set({
                 'number': result,
                 'declaredAt': FieldValue.serverTimestamp(),
               });
 
-              // 2. Chart History collection me permanent entry save
-              await FirebaseFirestore.instance.collection('results_history').add({
+              await FirebaseFirestore.instance.collection('results_history').doc("${todayDate}_$marketName").set({
                 'market': marketName,
                 'number': result,
                 'date': todayDate,
@@ -1831,7 +1955,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
               String andarDigit = result.substring(0, 1);
               String baharDigit = result.substring(1, 2);
 
-              // 3. Winning automatic calculate
               var betsSnapshot = await FirebaseFirestore.instance
                   .collection('bets')
                   .where('market', isEqualTo: marketName)
@@ -1846,7 +1969,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                 String userMob = bet['userMobile'];
                 double winAmount = 0.0;
 
-                // Jodi Check (95x Rate)
                 if (type == "Jodi" && bet.containsKey('betMap')) {
                   Map<String, dynamic> betMap = Map<String, dynamic>.from(bet['betMap']);
                   if (betMap.containsKey(result)) {
@@ -1855,7 +1977,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                   }
                 }
 
-                // Harup Check (9.5x Rate)
                 if (type == "Harup") {
                   if (bet.containsKey('andarMap')) {
                     Map<String, dynamic> aMap = Map<String, dynamic>.from(bet['andarMap']);
@@ -1888,10 +2009,10 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
               }
 
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(backgroundColor: Colors.green, content: Text("$marketName Result $result Ghosit! Chart me save ho gaya aur $winnersCount winners ko payment chali gayi.")),
+                SnackBar(backgroundColor: Colors.green, content: Text("$marketName Result $result Ghosit! $winnersCount winners ko credit ho gaya.")),
               );
             },
-            child: const Text("Declare & Pay Winners", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text("Declare & Pay", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1918,21 +2039,46 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
         children: [
           ListView(
             padding: const EdgeInsets.all(12),
-            children: appMarkets.map((m) {
-              return Card(
-                color: const Color(0xFF1E293B),
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  title: Text("${m.hindiName} (${m.name})", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
-                  subtitle: Text("Timing: ${m.resultTimeStr}"),
-                  trailing: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
-                    onPressed: () => _declareResultAndDistribute(context, m.name),
-                    child: const Text("Declare Number", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  ),
+            children: [
+              // One-click button to upload your provided chart data into Firebase
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [Color(0xFFD97706), Color(0xFFF59E0B)]),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              );
-            }).toList(),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  icon: _isImporting
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                      : const Icon(Icons.cloud_upload, color: Colors.black, size: 26),
+                  label: Text(
+                    _isImporting ? "UPLOADING CHART DATA..." : "ONE-CLICK UPLOAD 29-DAY CHART DATA",
+                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  onPressed: _isImporting ? null : _importPastChartData,
+                ),
+              ),
+              ...appMarkets.map((m) {
+                return Card(
+                  color: const Color(0xFF1E293B),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    title: Text("${m.hindiName} (${m.name})", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
+                    subtitle: Text("Timing: ${m.resultTimeStr}"),
+                    trailing: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
+                      onPressed: () => _declareResultAndDistribute(context, m.name),
+                      child: const Text("Declare Number", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
           ),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('bets').orderBy('timestamp', descending: true).limit(50).snapshots(),
@@ -2004,7 +2150,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
   }
 }
 
-// ----------------- 19. MY PLAYED GAME SCREEN -----------------
+// ----------------- 18. MY PLAYED GAME SCREEN -----------------
 class MyPlayGameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -2071,7 +2217,7 @@ class MyPlayGameScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 20. WITHDRAWAL LIST SCREEN -----------------
+// ----------------- 19. WITHDRAWAL LIST SCREEN -----------------
 class WithdrawalListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -2113,7 +2259,7 @@ class WithdrawalListScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 21. TERMS & CONDITIONS SCREEN -----------------
+// ----------------- 20. TERMS & CONDITIONS SCREEN -----------------
 class TermsAndConditionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
