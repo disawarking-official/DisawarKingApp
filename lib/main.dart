@@ -1403,7 +1403,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   }
 }
 
-// ----------------- 11. ALL-IN-ONE COMBINED MASTER CHART SCREEN -----------------
+// ----------------- 11. ALL-IN-ONE COMBINED MASTER CHART SCREEN (SORTED 1 SE 31) -----------------
 class CombinedAllMarketsChartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1414,7 +1414,6 @@ class CombinedAllMarketsChartScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('results_history')
-            .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -1442,6 +1441,13 @@ class CombinedAllMarketsChartScreen extends StatelessWidget {
               }
             }
           }
+
+          // Date ko 1 se shuru karne ke liye Numeric Sort (01, 02, 03 ... 29)
+          dates.sort((a, b) {
+            int numA = int.tryParse(a) ?? 0;
+            int numB = int.tryParse(b) ?? 0;
+            return numA.compareTo(numB);
+          });
 
           if (dates.isEmpty) {
             return const Center(
