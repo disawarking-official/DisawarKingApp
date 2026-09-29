@@ -28,7 +28,7 @@ jobs:
         run: |
           cp lib/main.dart /tmp/main.dart.bak
           cp pubspec.yaml /tmp/pubspec.yaml.bak
-          flutter create . --platforms=android --org=com.disawarking.app --overwrite
+          flutter create . --platforms=android --org=com.disawarking.app --project-name=disawarkingapp --overwrite
           cp /tmp/main.dart.bak lib/main.dart
           cp /tmp/pubspec.yaml.bak pubspec.yaml
 
@@ -37,7 +37,7 @@ jobs:
             cp google-services.json android/app/
           fi
 
-          # Set minSdkVersion 21 & Target Latest Android
+          # Set minSdkVersion 21
           sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' android/app/build.gradle || true
           sed -i 's/flutter.minSdkVersion/21/g' android/app/build.gradle || true
 
