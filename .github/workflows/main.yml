@@ -2,17 +2,17 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
 
-      - name: Setup Java
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -21,29 +21,30 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: Setup Android Project & Permissions
+      - name: Setup Android Project & Fix Configurations
         run: |
           cp lib/main.dart /tmp/main.dart.bak
           cp pubspec.yaml /tmp/pubspec.yaml.bak
           flutter create . --platforms=android --org=com.disawarking.app --overwrite
           cp /tmp/main.dart.bak lib/main.dart
           cp /tmp/pubspec.yaml.bak pubspec.yaml
-          
-          # Internet Permissions add karein
-          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' android/app/src/main/AndroidManifest.xml
 
-          # google-services.json copy karein
+          # Copy Firebase Config
           if [ -f "google-services.json" ]; then
             cp google-services.json android/app/
           fi
 
-          # minSdk 21 fix
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle || true
-          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 21/g' android/app/build.gradle || true
+          # Set minSdkVersion 21 & Target Latest Android
+          sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' android/app/build.gradle || true
+          sed -i 's/flutter.minSdkVersion/21/g' android/app/build.gradle || true
 
-      - name: Build APK
+          # Internet Permissions Fix
+          sed -i '/<application/i <uses-permission android:name="android.permission.INTERNET"\/>\n<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>' android/app/src/main/AndroidManifest.xml
+
+      - name: Build Universal Release APK
         run: |
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
@@ -53,4 +54,3 @@ jobs:
         with:
           name: DisawarKing-App
           path: build/app/outputs/flutter-apk/app-release.apk
-          
