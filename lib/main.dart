@@ -1085,7 +1085,6 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
                 children: [
                   Expanded(
                     child: Column(
-                      mainAxisSize:标识
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
