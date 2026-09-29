@@ -10,38 +10,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Setup Java JDK
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Flutter
+      - name: Setup Stable Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.19.6'
           channel: 'stable'
 
-      - name: Setup Android Project & Fix Configurations
+      - name: Clean Recreate Android Skeleton
         run: |
           cp lib/main.dart /tmp/main.dart.bak
           cp pubspec.yaml /tmp/pubspec.yaml.bak
-          flutter create . --platforms=android --org=com.disawarking.app --project-name=disawarkingapp --overwrite
+          rm -rf android
+          flutter create . --platforms=android --org=com.disawarking.app --project-name=disawarkingapp
           cp /tmp/main.dart.bak lib/main.dart
           cp /tmp/pubspec.yaml.bak pubspec.yaml
 
-          # Copy Firebase Config
+          # Copy Google Services Json
           if [ -f "google-services.json" ]; then
             cp google-services.json android/app/
           fi
 
-          # Set minSdkVersion 21
+          # Fix minSdkVersion to 21
           sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' android/app/build.gradle || true
           sed -i 's/flutter.minSdkVersion/21/g' android/app/build.gradle || true
 
-          # Internet Permissions Fix
+          # Permissions
           sed -i '/<application/i <uses-permission android:name="android.permission.INTERNET"\/>\n<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>' android/app/src/main/AndroidManifest.xml
 
       - name: Build Universal Release APK
@@ -49,7 +51,7 @@ jobs:
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
 
-      - name: Upload APK
+      - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
           name: DisawarKing-App
