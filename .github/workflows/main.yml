@@ -10,8 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4
@@ -24,21 +23,27 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Fix Android Permissions & Config
+      - name: Setup Android Project & Permissions
         run: |
-          # Copy Firebase Config agar root me ho
+          cp lib/main.dart /tmp/main.dart.bak
+          cp pubspec.yaml /tmp/pubspec.yaml.bak
+          flutter create . --platforms=android --org=com.disawarking.app --overwrite
+          cp /tmp/main.dart.bak lib/main.dart
+          cp /tmp/pubspec.yaml.bak pubspec.yaml
+
+          # Internet Permissions
+          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' android/app/src/main/AndroidManifest.xml || true
+
+          # google-services.json copy
           if [ -f "google-services.json" ]; then
             cp google-services.json android/app/ || true
           fi
 
-          # Min SDK 21 fix
+          # minSdk 21 fix
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle || true
           sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' android/app/build.gradle || true
-          sed -i 's/flutter.minSdkVersion/21/g' android/app/build.gradle || true
 
-          # Internet Permissions Fix
-          sed -i '/<application/i <uses-permission android:name="android.permission.INTERNET"\/>\n<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>' android/app/src/main/AndroidManifest.xml || true
-
-      - name: Build Universal Release APK
+      - name: Build APK
         run: |
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
