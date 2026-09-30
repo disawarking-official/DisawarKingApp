@@ -68,6 +68,25 @@ String dynamicUpiId = "9761630128@ybl";
 String dynamicNoticeText = "";
 bool dynamicEmergencyLock = false;
 String dynamicLatestApkUrl = "";
+String dynamicTermsText = "• अंतिम 2 घंटे में प्रति जोड़ी अधिकतम ₹200 की सीमा लागू होगी।\n"
+    "• महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं।\n"
+    "• कम से कम पैसे जोड़ें (Add Money): ₹50\n"
+    "• कम से कम निकासी (Withdrawal): ₹500\n"
+    "• केवल जीती हुई राशि (Winning Balance) ही निकाली जा सकती है। डिपॉजिट राशि से गेम खेलें।\n"
+    "• नए यूजर को पहली बार पैसे जोड़ने पर 5% का सीधा बोनस मिलेगा।\n"
+    "• निकासी का समय: प्रतिदिन सुबह 8:00 AM से दोपहर 2:00 PM तक।\n"
+    "• ₹5,000 से ऊपर की राशि केवल बैंक अकाउंट (Bank Transfer) में ही भेजी जाएगी।\n"
+    "• निकासी अनुरोध सबमिट होने के 30 मिनट के अंदर राशि ट्रांसफर कर दी जाती है।\n"
+    "• रेफरल कमीशन: आपके रेफरल कोड से जुड़े यूजर की प्रत्येक हारी हुई बाजी पर 7% कमीशन तुरंत आपके वॉलेट में स्वतः ट्रांसफर होगा।";
+
+Map<String, Map<String, dynamic>> dynamicMarketTimings = {
+  "DELHI BAZAR": {"closeHour": 14, "closeMin": 50, "closeTimeStr": "02:50 PM", "resultTimeStr": "03:15 PM"},
+  "SHREE GANESH": {"closeHour": 16, "closeMin": 0, "closeTimeStr": "04:00 PM", "resultTimeStr": "04:30 PM"},
+  "FARIDABAD": {"closeHour": 17, "closeMin": 50, "closeTimeStr": "05:50 PM", "resultTimeStr": "06:15 PM"},
+  "GHAZIABAD": {"closeHour": 21, "closeMin": 20, "closeTimeStr": "09:20 PM", "resultTimeStr": "09:45 PM"},
+  "GALI": {"closeHour": 23, "closeMin": 25, "closeTimeStr": "11:25 PM", "resultTimeStr": "11:55 PM"},
+  "DISAWAR": {"closeHour": 4, "closeMin": 0, "closeTimeStr": "04:00 AM", "resultTimeStr": "05:00 AM"},
+};
 
 bool isMonthEndToday() {
   DateTime now = DateTime.now();
@@ -78,19 +97,16 @@ bool isMonthEndToday() {
 class MarketConfig {
   final String name;
   final String hindiName;
-  final int closeHour;
-  final int closeMin;
-  final String closeTimeStr;
-  final String resultTimeStr;
 
   MarketConfig({
     required this.name,
     required this.hindiName,
-    required this.closeHour,
-    required this.closeMin,
-    required this.closeTimeStr,
-    required this.resultTimeStr,
   });
+
+  int get closeHour => dynamicMarketTimings[name]?["closeHour"] ?? 0;
+  int get closeMin => dynamicMarketTimings[name]?["closeMin"] ?? 0;
+  String get closeTimeStr => dynamicMarketTimings[name]?["closeTimeStr"] ?? "--";
+  String get resultTimeStr => dynamicMarketTimings[name]?["resultTimeStr"] ?? "--";
 
   DateTime getCloseDateTime() {
     DateTime now = DateTime.now();
@@ -137,14 +153,13 @@ class MarketConfig {
   }
 }
 
-// Order: Delhi Bazar -> Shree Ganesh -> Faridabad -> Ghaziabad -> Gali -> Disawar
 final List<MarketConfig> appMarkets = [
-  MarketConfig(name: "DELHI BAZAR", hindiName: "दिल्ली बाजार", closeHour: 14, closeMin: 50, closeTimeStr: "02:50 PM", resultTimeStr: "03:15 PM"),
-  MarketConfig(name: "SHREE GANESH", hindiName: "श्री गणेश", closeHour: 16, closeMin: 00, closeTimeStr: "04:00 PM", resultTimeStr: "04:30 PM"),
-  MarketConfig(name: "FARIDABAD", hindiName: "फ़रीदाबाद", closeHour: 17, closeMin: 50, closeTimeStr: "05:50 PM", resultTimeStr: "06:15 PM"),
-  MarketConfig(name: "GHAZIABAD", hindiName: "गाज़ियाबाद", closeHour: 21, closeMin: 20, closeTimeStr: "09:20 PM", resultTimeStr: "09:45 PM"),
-  MarketConfig(name: "GALI", hindiName: "गली", closeHour: 23, closeMin: 25, closeTimeStr: "11:25 PM", resultTimeStr: "11:55 PM"),
-  MarketConfig(name: "DISAWAR", hindiName: "दिसावर", closeHour: 4, closeMin: 00, closeTimeStr: "04:00 AM", resultTimeStr: "05:00 AM"),
+  MarketConfig(name: "DELHI BAZAR", hindiName: "दिल्ली बाजार"),
+  MarketConfig(name: "SHREE GANESH", hindiName: "श्री गणेश"),
+  MarketConfig(name: "FARIDABAD", hindiName: "फ़रीदाबाद"),
+  MarketConfig(name: "GHAZIABAD", hindiName: "गाज़ियाबाद"),
+  MarketConfig(name: "GALI", hindiName: "गली"),
+  MarketConfig(name: "DISAWAR", hindiName: "दिसावर"),
 ];
 
 Future<void> openWhatsAppChat({String message = "Namaste DisawarKing Support, mujhe sahayata chahiye."}) async {
@@ -459,7 +474,9 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
         'name': name,
         'mobile': mobile,
         'password': pass,
-        'balance': 0.0,
+        'depositBalance': 0.0,
+        'winningBalance': 0.0,
+        'hasDepositedBefore': false,
         'referredBy': verifiedReferrer ?? "",
         'referralEarnings': 0.0,
         'createdAt': FieldValue.serverTimestamp(),
@@ -726,6 +743,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    // Live listen to remote config updates
     _configSub = FirebaseFirestore.instance.collection('app_settings').doc('config').snapshots().listen((snap) {
       if (snap.exists && snap.data() != null) {
         var d = snap.data() as Map<String, dynamic>;
@@ -735,6 +753,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           dynamicNoticeText = d['notice'] ?? "";
           dynamicEmergencyLock = d['emergencyLock'] ?? false;
           dynamicLatestApkUrl = d['apkUrl'] ?? "";
+          dynamicTermsText = d['termsText'] ?? dynamicTermsText;
+
+          if (d.containsKey('marketTimings') && d['marketTimings'] != null) {
+            Map<String, dynamic> rawTimes = Map<String, dynamic>.from(d['marketTimings']);
+            rawTimes.forEach((key, value) {
+              if (dynamicMarketTimings.containsKey(key)) {
+                dynamicMarketTimings[key] = Map<String, dynamic>.from(value);
+              }
+            });
+          }
         });
 
         if (dynamicLatestApkUrl.isNotEmpty && mounted) {
@@ -872,11 +900,17 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                       StreamBuilder<DocumentSnapshot>(
                         stream: FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).snapshots(),
                         builder: (context, snapshot) {
-                          double bal = 0.0;
+                          double depBal = 0.0;
+                          double winBal = 0.0;
                           if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
                             var d = snapshot.data!.data() as Map<String, dynamic>?;
-                            if (d != null && d.containsKey('balance')) bal = (d['balance'] as num).toDouble();
+                            if (d != null) {
+                              depBal = ((d['depositBalance'] ?? 0) as num).toDouble();
+                              winBal = ((d['winningBalance'] ?? 0) as num).toDouble();
+                            }
                           }
+                          double totalBal = depBal + winBal;
+
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
@@ -888,7 +922,7 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 const Text("Wallet", style: TextStyle(color: Colors.white54, fontSize: 10)),
-                                Text("₹ ${bal.toStringAsFixed(2)}", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 14)),
+                                Text("₹ ${totalBal.toStringAsFixed(2)}", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 14)),
                               ],
                             ),
                           );
@@ -1221,6 +1255,32 @@ class GameModeSelectScreen extends StatelessWidget {
   }
 }
 
+// ----------------- WALLET DEDUCTION HELPER FUNCTION -----------------
+// Deducts points from depositBalance first, then winningBalance
+Future<bool> deductGamePoints(String mobile, double points) async {
+  var uRef = FirebaseFirestore.instance.collection('users').doc(mobile);
+  var snap = await uRef.get();
+  if (!snap.exists) return false;
+
+  var d = snap.data()!;
+  double dep = ((d['depositBalance'] ?? 0) as num).toDouble();
+  double win = ((d['winningBalance'] ?? 0) as num).toDouble();
+  double total = dep + win;
+
+  if (points > total) return false;
+
+  if (dep >= points) {
+    await uRef.update({'depositBalance': FieldValue.increment(-points)});
+  } else {
+    double remainder = points - dep;
+    await uRef.update({
+      'depositBalance': 0.0,
+      'winningBalance': FieldValue.increment(-remainder),
+    });
+  }
+  return true;
+}
+
 // ----------------- 8. JODI SCREEN -----------------
 class JodiSelectionScreen extends StatefulWidget {
   final MarketConfig market;
@@ -1281,10 +1341,8 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
       }
     }
 
-    var userDoc = await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).get();
-    double currentBal = ((userDoc.data()?['balance'] ?? 0) as num).toDouble();
-
-    if (totalAmount > currentBal) {
+    bool success = await deductGamePoints(currentLoggedInUserMobile, totalAmount.toDouble());
+    if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text("Wallet balance kam hai!")));
       return;
     }
@@ -1318,10 +1376,6 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
 
     try {
       await FirebaseFirestore.instance.collection('bets').add(gameData);
-      await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).update({
-        'balance': FieldValue.increment(-totalAmount),
-      });
-
       for (var c in _controllers) c.clear();
       _calculateTotal();
 
@@ -1340,12 +1394,14 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
           StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).snapshots(),
             builder: (context, snapshot) {
-              double bal = 0.0;
+              double total = 0.0;
               if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
                 var d = snapshot.data!.data() as Map<String, dynamic>?;
-                if (d != null && d.containsKey('balance')) bal = (d['balance'] as num).toDouble();
+                if (d != null) {
+                  total = ((d['depositBalance'] ?? 0) as num).toDouble() + ((d['winningBalance'] ?? 0) as num).toDouble();
+                }
               }
-              return Center(child: Padding(padding: const EdgeInsets.only(right: 16), child: Text("Bal: ₹${bal.toStringAsFixed(2)}", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold))));
+              return Center(child: Padding(padding: const EdgeInsets.only(right: 16), child: Text("Bal: ₹${total.toStringAsFixed(2)}", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold))));
             },
           )
         ],
@@ -1466,10 +1522,8 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
     }
     if (total <= 0) return;
 
-    var userDoc = await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).get();
-    double currentBal = ((userDoc.data()?['balance'] ?? 0) as num).toDouble();
-
-    if (total > currentBal) {
+    bool success = await deductGamePoints(currentLoggedInUserMobile, total.toDouble());
+    if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Wallet balance kam hai!")));
       return;
     }
@@ -1509,9 +1563,6 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
 
     try {
       await FirebaseFirestore.instance.collection('bets').add(gameData);
-      await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).update({
-        'balance': FieldValue.increment(-total),
-      });
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Harup Game Lag Gaya!")));
       Navigator.pop(context);
     } catch (e) {
@@ -1673,10 +1724,8 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
     setState(() => _isSaving = true);
 
     try {
-      var userDoc = await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).get();
-      double currentBal = ((userDoc.data()?['balance'] ?? 0) as num).toDouble();
-
-      if (calculatedTotalAmount > currentBal) {
+      bool success = await deductGamePoints(currentLoggedInUserMobile, calculatedTotalAmount.toDouble());
+      if (!success) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text("Wallet balance kam hai!")));
         setState(() => _isSaving = false);
         return;
@@ -1707,9 +1756,6 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
       };
 
       await FirebaseFirestore.instance.collection('bets').add(gameData);
-      await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).update({
-        'balance': FieldValue.increment(-calculatedTotalAmount),
-      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(backgroundColor: Colors.green, content: Text("Safal! $totalJodisCount Crossing Jodiyan (₹$calculatedTotalAmount) lag gayi.")),
@@ -1965,7 +2011,7 @@ class ResultsHistoryScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 13. WALLET SCREEN -----------------
+// ----------------- 13. WALLET SCREEN (WINNING VS DEPOSIT BALANCE SEPARATION) -----------------
 class WalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1976,43 +2022,81 @@ class WalletScreen extends StatelessWidget {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(28),
+              padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF312E81), Color(0xFF1E293B)])),
-              child: Column(
-                children: [
-                  const Text("Available Balance", style: TextStyle(color: Colors.white60, fontSize: 14)),
-                  const SizedBox(height: 6),
-                  StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).snapshots(),
-                    builder: (context, snapshot) {
-                      double bal = 0.0;
-                      if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
-                        var d = snapshot.data!.data() as Map<String, dynamic>?;
-                        if (d != null && d.containsKey('balance')) bal = (d['balance'] as num).toDouble();
-                      }
-                      return Text("₹ ${bal.toStringAsFixed(2)}", style: const TextStyle(fontSize: 38, fontWeight: FontWeight.bold, color: Color(0xFFF59E0B)));
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).snapshots(),
+                builder: (context, snapshot) {
+                  double depBal = 0.0;
+                  double winBal = 0.0;
+                  if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
+                    var d = snapshot.data!.data() as Map<String, dynamic>?;
+                    if (d != null) {
+                      depBal = ((d['depositBalance'] ?? 0) as num).toDouble();
+                      winBal = ((d['winningBalance'] ?? 0) as num).toDouble();
+                    }
+                  }
+                  double totalBal = depBal + winBal;
+
+                  return Column(
                     children: [
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        label: const Text("Add Money", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => AddMoneyPaymentScreen())),
+                      const Text("Total Available Balance", style: TextStyle(color: Colors.white60, fontSize: 13)),
+                      const SizedBox(height: 4),
+                      Text("₹ ${totalBal.toStringAsFixed(2)}", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Color(0xFFF59E0B))),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white12)),
+                              child: Column(
+                                children: [
+                                  const Text("Deposit Wallet (गेम खेलें)", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                                  const SizedBox(height: 4),
+                                  Text("₹ ${depBal.toStringAsFixed(2)}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.amber.withOpacity(0.4))),
+                              child: Column(
+                                children: [
+                                  const Text("Winning Wallet (निकासी)", style: TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  Text("₹ ${winBal.toStringAsFixed(2)}", style: const TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.bold, fontSize: 16)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 14),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF59E0B), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-                        icon: const Icon(Icons.arrow_upward, color: Colors.black),
-                        label: const Text("Withdraw", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => WithdrawRequestScreen())),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+                            icon: const Icon(Icons.add, color: Colors.white),
+                            label: const Text("Add Money", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => AddMoneyPaymentScreen())),
+                          ),
+                          const SizedBox(width: 14),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF59E0B), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+                            icon: const Icon(Icons.arrow_upward, color: Colors.black),
+                            label: const Text("Withdraw", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => WithdrawRequestScreen())),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
+                  );
+                },
               ),
             ),
             const Padding(
@@ -2022,10 +2106,11 @@ class WalletScreen extends StatelessWidget {
                 children: [
                   Text("नियम व शर्तें (Payment Rules):", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFF59E0B))),
                   SizedBox(height: 8),
-                  Text("• कम से कम पैसे जोड़ें (Add Money): ₹50", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  Text("• नए यूजर को 1st डिपॉजिट पर 5% का सीधा बोनस दिया जाएगा।", style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text("• केवल Winning Wallet (जीती हुई राशि) ही निकाली जा सकती है।", style: TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 13)),
                   Text("• कम से कम निकासी (Withdrawal): ₹500", style: TextStyle(color: Colors.white70, fontSize: 13)),
                   Text("• निकासी का समय: सुबह 8:00 AM से दोपहर 2:00 PM तक", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  Text("• ₹5,000 से ऊपर की राशि केवल बैंक अकाउंट में ही ट्रांसफर की जाएगी।", style: TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                  Text("• ₹5,000 से ऊपर की राशि केवल बैंक अकाउंट में ही ट्रांसफर की जाएगी।", style: TextStyle(color: Colors.white70, fontSize: 13)),
                   SizedBox(height: 10),
                   Text("⚡ निकासी अनुरोध (Withdrawal Request) सबमिट करने के 30 मिनट के अंदर राशि ट्रांसफर कर दी जाएगी।", style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12)),
                 ],
@@ -2038,7 +2123,7 @@ class WalletScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 14. ADD MONEY SCREEN (DYNAMIC UPI & QR CODE) -----------------
+// ----------------- 14. ADD MONEY SCREEN -----------------
 class AddMoneyPaymentScreen extends StatefulWidget {
   @override
   _AddMoneyPaymentScreenState createState() => _AddMoneyPaymentScreenState();
@@ -2088,6 +2173,18 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(color: Colors.green.withOpacity(0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.greenAccent)),
+              child: const Row(
+                children: [
+                  Icon(Icons.stars, color: Colors.greenAccent, size: 24),
+                  SizedBox(width: 8),
+                  Expanded(child: Text("1st Deposit Offer: नए यूजर को पहले डिपॉजिट पर 5% अतिरिक्त बोनस मिलेगा!", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
+                ],
+              ),
+            ),
             Image.network(dynamicQrUrl, height: 200, width: 200),
             const SizedBox(height: 8),
             Text("UPI ID: $dynamicUpiId", style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
@@ -2112,7 +2209,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   }
 }
 
-// ----------------- 15. WITHDRAW SCREEN -----------------
+// ----------------- 15. WITHDRAW SCREEN (ONLY WINNING BALANCE ALLOWED) -----------------
 class WithdrawRequestScreen extends StatefulWidget {
   @override
   _WithdrawRequestScreenState createState() => _WithdrawRequestScreenState();
@@ -2211,10 +2308,28 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
     setState(() => _isSaving = true);
     try {
       var userDoc = await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).get();
-      double currentBal = ((userDoc.data()?['balance'] ?? 0) as num).toDouble();
+      double winBal = ((userDoc.data()?['winningBalance'] ?? 0) as num).toDouble();
 
-      if (amt > currentBal) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("वॉलेट में पर्याप्त बैलेंस नहीं है!")));
+      // STRICT VALIDATION: Direct deposit cannot be withdrawn
+      if (amt > winBal) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E293B),
+            title: const Text("निकासी अस्वीकृत", style: TextStyle(color: Colors.redAccent)),
+            content: Text(
+              "आप केवल अपनी जीती हुई राशि (Winning Balance: ₹${winBal.toStringAsFixed(2)}) ही निकाल सकते हैं।\n\nडिपॉजिट की गई राशि से गेम खेलें और जीतें!",
+              style: const TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("समझ गया", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              )
+            ],
+          ),
+        );
         setState(() => _isSaving = false);
         return;
       }
@@ -2231,8 +2346,9 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
         "timestamp": FieldValue.serverTimestamp(),
       });
 
+      // Deduct exclusively from winning balance
       await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).update({
-        'balance': FieldValue.increment(-amt),
+        'winningBalance': FieldValue.increment(-amt),
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2272,9 +2388,9 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
                     ],
                   ),
                   SizedBox(height: 6),
-                  Text("• ₹5,000 से ऊपर की राशि केवल बैंक अकाउंट में ही ट्रांसफर की जाएगी।", style: TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                  Text("• केवल जीती हुई राशि (Winning Wallet) ही निकाली जा सकती है।", style: TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 12)),
                   SizedBox(height: 4),
-                  Text("• निकासी अनुरोध सबमिट होने के 30 मिनट के अंदर राशि ट्रांसफर हो जाएगी।", style: TextStyle(color: Colors.greenAccent, fontSize: 11)),
+                  Text("• ₹5,000 से ऊपर की राशि केवल बैंक अकाउंट में ही ट्रांसफर की जाएगी।", style: TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
               ),
             ),
@@ -2467,7 +2583,7 @@ class ReferAndEarnScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 17. MASTER ADMIN PANEL (NO CONST ERROR FIXED) -----------------
+// ----------------- 17. MASTER ADMIN PANEL (WITH LIVE GAME TIMINGS & T&C CONTROLS) -----------------
 class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
@@ -2481,29 +2597,51 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
   final _upiCtrl = TextEditingController(text: dynamicUpiId);
   final _noticeCtrl = TextEditingController(text: dynamicNoticeText);
   final _apkUrlCtrl = TextEditingController(text: dynamicLatestApkUrl);
+  final _termsCtrl = TextEditingController(text: dynamicTermsText);
   bool _emergencyLock = dynamicEmergencyLock;
   bool _isSavingSettings = false;
+
+  // Controllers for each game time
+  final Map<String, TextEditingController> _closeTimeControllers = {};
+  final Map<String, TextEditingController> _resultTimeControllers = {};
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+
+    dynamicMarketTimings.forEach((market, data) {
+      _closeTimeControllers[market] = TextEditingController(text: data['closeTimeStr']);
+      _resultTimeControllers[market] = TextEditingController(text: data['resultTimeStr']);
+    });
   }
 
   void _saveRemoteSettings() async {
     setState(() => _isSavingSettings = true);
     try {
+      Map<String, dynamic> updatedTimings = {};
+      dynamicMarketTimings.forEach((market, data) {
+        updatedTimings[market] = {
+          'closeHour': data['closeHour'],
+          'closeMin': data['closeMin'],
+          'closeTimeStr': _closeTimeControllers[market]?.text.trim() ?? data['closeTimeStr'],
+          'resultTimeStr': _resultTimeControllers[market]?.text.trim() ?? data['resultTimeStr'],
+        };
+      });
+
       await FirebaseFirestore.instance.collection('app_settings').doc('config').set({
         'whatsapp': _whatsappCtrl.text.trim(),
         'upi': _upiCtrl.text.trim(),
         'notice': _noticeCtrl.text.trim(),
         'emergencyLock': _emergencyLock,
         'apkUrl': _apkUrlCtrl.text.trim(),
+        'termsText': _termsCtrl.text.trim(),
+        'marketTimings': updatedTimings,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(backgroundColor: Colors.green, content: Text("Settings Live Update Ho Gayi! Sabhi users ko turant dikhega.")),
+        const SnackBar(backgroundColor: Colors.green, content: Text("Settings, Timings & Rules Live Update Ho Gaye!")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
@@ -2777,7 +2915,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                               if (prevWon > 0 && uMob.isNotEmpty) {
                                 try {
                                   await firestore.collection('users').doc(uMob).update({
-                                    'balance': FieldValue.increment(-prevWon),
+                                    'winningBalance': FieldValue.increment(-prevWon),
                                   });
                                 } catch (_) {}
                               }
@@ -2799,7 +2937,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                             if (comm > 0 && refMob.isNotEmpty) {
                               try {
                                 await firestore.collection('users').doc(refMob).update({
-                                  'balance': FieldValue.increment(-comm),
+                                  'winningBalance': FieldValue.increment(-comm),
                                   'referralEarnings': FieldValue.increment(-comm),
                                 });
                               } catch (_) {}
@@ -2863,8 +3001,9 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           if (winAmount > 0 && userMob.isNotEmpty) {
                             winnersCount++;
                             try {
+                              // All winnings credited directly to Winning Wallet
                               await firestore.collection('users').doc(userMob).set({
-                                'balance': FieldValue.increment(winAmount),
+                                'winningBalance': FieldValue.increment(winAmount),
                               }, SetOptions(merge: true));
 
                               await doc.reference.update({
@@ -2884,7 +3023,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                                 if (refMobile.isNotEmpty && betAmt > 0) {
                                   double commission = (betAmt * 0.07);
                                   await firestore.collection('users').doc(refMobile).set({
-                                    'balance': FieldValue.increment(commission),
+                                    'winningBalance': FieldValue.increment(commission),
                                     'referralEarnings': FieldValue.increment(commission),
                                   }, SetOptions(merge: true));
 
@@ -2943,7 +3082,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
           controller: _tabController,
           indicatorColor: Colors.amber,
           isScrollable: true,
-          // Fixed: Removed invalid 'const' keyword that caused compilation error
           tabs: [
             const Tab(text: "Results"),
             const Tab(text: "Live Bets"),
@@ -3054,7 +3192,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
             },
           ),
 
-          // TAB 3: DEPOSITS
+          // TAB 3: DEPOSITS (WITH 5% 1st DEPOSIT BONUS SYSTEM)
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('deposits').orderBy('timestamp', descending: true).limit(50).snapshots(),
             builder: (context, snapshot) {
@@ -3080,11 +3218,31 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           ? ElevatedButton(
                               style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
                               onPressed: () async {
+                                var uDoc = await FirebaseFirestore.instance.collection('users').doc(mob).get();
+                                bool hasDepositedBefore = false;
+                                if (uDoc.exists) {
+                                  hasDepositedBefore = uDoc.data()?['hasDepositedBefore'] ?? false;
+                                }
+
+                                double finalCredit = amt;
+                                String bonusMsg = "";
+
+                                // 5% Bonus on First Deposit
+                                if (!hasDepositedBefore) {
+                                  double bonus = (amt * 0.05);
+                                  finalCredit = amt + bonus;
+                                  bonusMsg = " (+5% Bonus ₹$bonus)";
+                                }
+
                                 await docs[i].reference.update({'status': 'Approved'});
-                                await FirebaseFirestore.instance.collection('users').doc(mob).update({
-                                  'balance': FieldValue.increment(amt),
-                                });
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("₹$amt Approved & Wallet Updated!")));
+                                await FirebaseFirestore.instance.collection('users').doc(mob).set({
+                                  'depositBalance': FieldValue.increment(finalCredit),
+                                  'hasDepositedBefore': true,
+                                }, SetOptions(merge: true));
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(backgroundColor: Colors.green, content: Text("₹$finalCredit Approved$bonusMsg & Deposit Wallet Me Jod Diya!")),
+                                );
                               },
                               child: const Text("Approve", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                             )
@@ -3187,9 +3345,9 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
             },
           ),
 
-          // TAB 5: REMOTE SETTINGS (LIVE CONTROL)
+          // TAB 5: REMOTE SETTINGS (LIVE TIMINGS, T&C, UPI, ETC.)
           ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             children: [
               Card(
                 color: const Color(0xFF1E293B),
@@ -3199,10 +3357,42 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("App Remote Live Settings", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 6),
-                      const Text("Yahan se setting badal kar Save karein, sabhi users ke app me turant live change ho jayega.", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                      const Text("1. Live Market Timings (Close & Result)", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 4),
+                      const Text("Yahan se time badal kar Save karein, sabhi users ke app par turant naya time apply hoga.", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                      const Divider(color: Colors.white12, height: 16),
+                      ...appMarkets.map((m) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("${m.hindiName} (${m.name})", style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _closeTimeControllers[m.name],
+                                      decoration: const InputDecoration(labelText: "Close Time (e.g. 05:50 PM)", border: OutlineInputBorder(), isDense: true),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _resultTimeControllers[m.name],
+                                      decoration: const InputDecoration(labelText: "Result Time (e.g. 06:15 PM)", border: OutlineInputBorder(), isDense: true),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            ],
+                          ),
+                        );
+                      }),
                       const Divider(color: Colors.white12, height: 20),
+                      const Text("2. Contact & Payment Info", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 12),
                       TextField(
                         controller: _whatsappCtrl,
                         keyboardType: TextInputType.phone,
@@ -3223,6 +3413,14 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                       TextField(
                         controller: _apkUrlCtrl,
                         decoration: const InputDecoration(labelText: "Auto-Update APK Direct Link (Optional)", border: OutlineInputBorder()),
+                      ),
+                      const SizedBox(height: 14),
+                      const Text("3. Terms & Conditions (नियम एवं शर्तें)", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _termsCtrl,
+                        maxLines: 6,
+                        decoration: const InputDecoration(labelText: "App Rules / Terms (Yahan edit karein)", border: OutlineInputBorder()),
                       ),
                       const SizedBox(height: 14),
                       SwitchListTile(
@@ -3373,24 +3571,17 @@ class WithdrawalListScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 20. TERMS & CONDITIONS SCREEN -----------------
+// ----------------- 20. TERMS & CONDITIONS SCREEN (DYNAMIC LIVE TEXT) -----------------
 class TermsAndConditionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("नियम एवं शर्तें")),
-      body: const Padding(
-        padding: EdgeInsets.all(16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Text(
-          "• अंतिम 2 घंटे में प्रति जोड़ी अधिकतम ₹200 की सीमा लागू होगी।\n"
-          "• महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं।\n"
-          "• कम से कम पैसे जोड़ें (Add Money): ₹50\n"
-          "• कम से कम निकासी (Withdrawal): ₹500\n"
-          "• निकासी का समय: प्रतिदिन सुबह 8:00 AM से दोपहर 2:00 PM तक।\n"
-          "• ₹5,000 से ऊपर की राशि केवल बैंक अकाउंट (Bank Transfer) में ही भेजी जाएगी।\n"
-          "• निकासी अनुरोध सबमिट होने के 30 मिनट के अंदर राशि ट्रांसफर कर दी जाती है।\n"
-          "• रेफरल कमीशन: आपके रेफरल कोड से जुड़े यूजर की प्रत्येक हारी हुई बाजी पर 7% कमीशन तुरंत आपके वॉलेट में स्वतः ट्रांसफर होगा।",
-          style: TextStyle(fontSize: 14, height: 1.6, color: Colors.white70),
+          dynamicTermsText,
+          style: const TextStyle(fontSize: 14, height: 1.6, color: Colors.white70),
         ),
       ),
     );
