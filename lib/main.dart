@@ -110,13 +110,14 @@ class MarketConfig {
   }
 }
 
+// ORDER: Delhi Bazar -> Shree Ganesh -> Faridabad -> Ghaziabad -> Gali -> Disawar (Last)
 final List<MarketConfig> appMarkets = [
-  MarketConfig(name: "DISAWAR", hindiName: "दिसावर", closeHour: 4, closeMin: 00, closeTimeStr: "04:00 AM", resultTimeStr: "05:00 AM"),
   MarketConfig(name: "DELHI BAZAR", hindiName: "दिल्ली बाजार", closeHour: 14, closeMin: 50, closeTimeStr: "02:50 PM", resultTimeStr: "03:15 PM"),
   MarketConfig(name: "SHREE GANESH", hindiName: "श्री गणेश", closeHour: 16, closeMin: 00, closeTimeStr: "04:00 PM", resultTimeStr: "04:30 PM"),
   MarketConfig(name: "FARIDABAD", hindiName: "फ़रीदाबाद", closeHour: 17, closeMin: 50, closeTimeStr: "05:50 PM", resultTimeStr: "06:15 PM"),
   MarketConfig(name: "GHAZIABAD", hindiName: "गाज़ियाबाद", closeHour: 21, closeMin: 20, closeTimeStr: "09:20 PM", resultTimeStr: "09:45 PM"),
   MarketConfig(name: "GALI", hindiName: "गली", closeHour: 23, closeMin: 25, closeTimeStr: "11:25 PM", resultTimeStr: "11:55 PM"),
+  MarketConfig(name: "DISAWAR", hindiName: "दिसावर", closeHour: 4, closeMin: 00, closeTimeStr: "04:00 AM", resultTimeStr: "05:00 AM"),
 ];
 
 Future<void> openWhatsAppChat({String message = "Namaste DisawarKing Support, mujhe sahayata chahiye."}) async {
@@ -1377,7 +1378,7 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
   }
 }
 
-// ----------------- 10. CROSSING SCREEN (SET 1 X SET 2 COMBINATION WITH AMOUNT PER JODI) -----------------
+// ----------------- 10. CROSSING SCREEN -----------------
 class CrossingSelectionScreen extends StatefulWidget {
   final MarketConfig market;
   CrossingSelectionScreen({required this.market});
@@ -1467,7 +1468,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
         "userName": currentLoggedInUserName,
         "market": widget.market.name,
         "hindiMarket": widget.market.hindiName,
-        "type": "Jodi", // Automatically evaluates as Jodi (95x rate)
+        "type": "Jodi",
         "subType": "Crossing",
         "numbers": listStrs.join(", "),
         "betMap": betBreakdown,
@@ -1737,7 +1738,7 @@ class ResultsHistoryScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 13. WALLET SCREEN (SHUDDH HINDI CONDITIONS) -----------------
+// ----------------- 13. WALLET SCREEN -----------------
 class WalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1881,7 +1882,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   }
 }
 
-// ----------------- 15. WITHDRAW SCREEN (HINDI CONDITIONS + >5000 BANK ONLY ENFORCEMENT) -----------------
+// ----------------- 15. WITHDRAW SCREEN -----------------
 class WithdrawRequestScreen extends StatefulWidget {
   @override
   _WithdrawRequestScreenState createState() => _WithdrawRequestScreenState();
@@ -1895,11 +1896,10 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
   final _accountNumController = TextEditingController();
   final _ifscController = TextEditingController();
 
-  int _selectedMethod = 0; // 0 = UPI, 1 = Bank Transfer
+  int _selectedMethod = 0;
   bool _isSaving = false;
 
   void _submitWithdraw() async {
-    // 1. STRICT 8:00 AM TO 2:00 PM LOCK
     DateTime now = DateTime.now();
     if (now.hour < 8 || now.hour >= 14) {
       showDialog(
@@ -1929,7 +1929,6 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
       return;
     }
 
-    // 2. STRICT RULE: > 5000 ONLY IN BANK ACCOUNT
     if (amt > 5000 && _selectedMethod == 0) {
       showDialog(
         context: context,
@@ -2238,7 +2237,7 @@ class ReferAndEarnScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 17. MASTER ADMIN PANEL -----------------
+// ----------------- 17. MASTER ADMIN PANEL (DATE-SMART DECLARE & INSTANT OVERRIDE) -----------------
 class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
@@ -2330,8 +2329,21 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
     }
   }
 
+  // Calculate default smart game date (Gali midnight shift handling)
+  String _getDefaultGameDate(String marketName) {
+    DateTime now = DateTime.now();
+    // Agar Gali ka result raat 12:00 AM se subah 04:00 AM ke beech khul raha hai,
+    // toh wo asal me pichle din ka result hai!
+    if (marketName == "GALI" && now.hour < 4) {
+      DateTime yesterday = now.subtract(const Duration(days: 1));
+      return yesterday.day.toString().padLeft(2, '0');
+    }
+    return now.day.toString().padLeft(2, '0');
+  }
+
   void _declareResultAndDistribute(BuildContext context, String marketName) async {
     final TextEditingController numCtrl = TextEditingController();
+    final TextEditingController dateCtrl = TextEditingController(text: _getDefaultGameDate(marketName));
 
     var currentResultDoc = await FirebaseFirestore.instance.collection('results').doc(marketName).get();
     String? existingResult = currentResultDoc.data()?['number']?.toString();
@@ -2339,239 +2351,275 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: Text(
-          isReDeclaration ? "CORRECT RESULT: $marketName" : "Result Declare: $marketName",
-          style: TextStyle(color: isReDeclaration ? Colors.orangeAccent : Colors.amber),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isReDeclaration) ...[
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: Colors.red.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.redAccent)),
-                child: Text(
-                  "⚠️ Is Market ka result pehle se '$existingResult' khula hua hai!\n\nNaya number daalne par purane winners se paisa revert hoga aur naye winners ko credit hoga.",
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
+      barrierDismissible: false,
+      builder: (ctx) {
+        bool isProcessing = false;
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1E293B),
+              title: Text(
+                isReDeclaration ? "CORRECT RESULT: $marketName" : "Result Declare: $marketName",
+                style: TextStyle(color: isReDeclaration ? Colors.orangeAccent : Colors.amber),
               ),
-              const SizedBox(height: 12),
-            ],
-            const Text("Naya 2-Digit Number Dalein:", style: TextStyle(color: Colors.white70, fontSize: 13)),
-            const SizedBox(height: 12),
-            TextField(
-              controller: numCtrl,
-              keyboardType: TextInputType.number,
-              maxLength: 2,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.amber),
-              decoration: InputDecoration(
-                hintText: isReDeclaration ? existingResult : "00",
-                border: const OutlineInputBorder(),
-                counterText: "",
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isReDeclaration) ...[
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(color: Colors.red.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.redAccent)),
+                      child: Text(
+                        "⚠️ Is Market ka pehle se '$existingResult' khula hai.\n\nNaya number save karne par purane winners ka paisa revert hoga aur naye winners ko credit hoga.",
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: dateCtrl,
+                          keyboardType: TextInputType.number,
+                          maxLength: 2,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amberAccent),
+                          decoration: const InputDecoration(labelText: "Tarikh (Date)", border: OutlineInputBorder(), counterText: ""),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: numCtrl,
+                          keyboardType: TextInputType.number,
+                          maxLength: 2,
+                          autofocus: true,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.amber),
+                          decoration: const InputDecoration(labelText: "Result (00-99)", border: OutlineInputBorder(), counterText: ""),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (isProcessing) ...[
+                    const SizedBox(height: 16),
+                    const CircularProgressIndicator(color: Colors.amber),
+                    const SizedBox(height: 8),
+                    const Text("Result Update Ho Raha Hai...", style: TextStyle(color: Colors.amberAccent, fontSize: 12)),
+                  ]
+                ],
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: isReDeclaration ? Colors.orange : Colors.green),
-            onPressed: () async {
-              String result = numCtrl.text.trim();
-              if (result.length != 2) return;
-              Navigator.pop(ctx);
+              actions: [
+                if (!isProcessing) ...[
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: isReDeclaration ? Colors.orange : Colors.green),
+                    onPressed: () async {
+                      String result = numCtrl.text.trim();
+                      String chosenDate = dateCtrl.text.trim();
 
-              var firestore = FirebaseFirestore.instance;
+                      if (result.length != 2) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Pura 2 anko ka number dalein (jaise 22)!")));
+                        return;
+                      }
+                      if (chosenDate.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tarikh (Date) dalein!")));
+                        return;
+                      }
 
-              // 1. ROLLBACK PREVIOUS WRONG RESULT IF RE-DECLARING
-              if (isReDeclaration && existingResult != result) {
-                var oldWonBets = await firestore
-                    .collection('bets')
-                    .where('market', isEqualTo: marketName)
-                    .where('status', isGreaterThanOrEqualTo: 'Won')
-                    .get();
+                      setDialogState(() => isProcessing = true);
+                      var firestore = FirebaseFirestore.instance;
 
-                for (var doc in oldWonBets.docs) {
-                  var data = doc.data();
-                  double prevWon = ((data['winningAmount'] ?? 0) as num).toDouble();
-                  String uMob = data['userMobile'] ?? '';
+                      try {
+                        // 1. INSTANT LIVE RESULT & CHART UPDATE (NO WAITING, NO FREEZING)
+                        await firestore.collection('results').doc(marketName).set({
+                          'number': result,
+                          'date': chosenDate,
+                          'declaredAt': FieldValue.serverTimestamp(),
+                          'wasCorrected': isReDeclaration,
+                        });
 
-                  if (prevWon > 0 && uMob.isNotEmpty) {
-                    try {
-                      await firestore.collection('users').doc(uMob).update({
-                        'balance': FieldValue.increment(-prevWon),
-                      });
-                    } catch (_) {}
-                  }
-
-                  await doc.reference.update({
-                    'status': 'Pending',
-                    'winningAmount': 0.0,
-                  });
-                }
-
-                var oldLostBets = await firestore
-                    .collection('bets')
-                    .where('market', isEqualTo: marketName)
-                    .where('status', isEqualTo: 'Lost')
-                    .get();
-
-                for (var doc in oldLostBets.docs) {
-                  await doc.reference.update({'status': 'Pending'});
-                }
-
-                var oldComms = await firestore
-                    .collection('referral_commissions')
-                    .where('market', isEqualTo: marketName)
-                    .get();
-
-                for (var cDoc in oldComms.docs) {
-                  double comm = ((cDoc.data()['commission'] ?? 0) as num).toDouble();
-                  String refMob = cDoc.data()['toReferrer'] ?? '';
-                  if (comm > 0 && refMob.isNotEmpty) {
-                    try {
-                      await firestore.collection('users').doc(refMob).update({
-                        'balance': FieldValue.increment(-comm),
-                        'referralEarnings': FieldValue.increment(-comm),
-                      });
-                    } catch (_) {}
-                  }
-                  await cDoc.reference.delete();
-                }
-              }
-
-              // 2. SAVE NEW RESULT IN LIVE RESULTS & CHART HISTORY
-              String todayDate = "${DateTime.now().day.toString().padLeft(2, '0')}";
-
-              await firestore.collection('results').doc(marketName).set({
-                'number': result,
-                'declaredAt': FieldValue.serverTimestamp(),
-                'wasCorrected': isReDeclaration,
-              });
-
-              await firestore.collection('results_history').doc("${todayDate}_$marketName").set({
-                'market': marketName,
-                'number': result,
-                'date': todayDate,
-                'timestamp': FieldValue.serverTimestamp(),
-              });
-
-              // 3. EVALUATE AND DISTRIBUTE TO NEW WINNERS & LOSERS
-              String andarDigit = result.substring(0, 1);
-              String baharDigit = result.substring(1, 2);
-
-              var betsSnapshot = await firestore
-                  .collection('bets')
-                  .where('market', isEqualTo: marketName)
-                  .where('status', isEqualTo: 'Pending')
-                  .get();
-
-              int winnersCount = 0;
-
-              for (var doc in betsSnapshot.docs) {
-                var bet = doc.data();
-                String type = bet['type'] ?? '';
-                String userMob = bet['userMobile'] ?? '';
-                String numbersStr = bet['numbers']?.toString() ?? '';
-                double betAmt = ((bet['amount'] ?? 0) as num).toDouble();
-                double winAmount = 0.0;
-
-                if (type == "Jodi") {
-                  if (bet.containsKey('betMap') && bet['betMap'] != null) {
-                    Map<String, dynamic> betMap = Map<String, dynamic>.from(bet['betMap']);
-                    if (betMap.containsKey(result)) {
-                      int betPoints = (betMap[result] as num).toInt();
-                      winAmount += (betPoints * 95).toDouble();
-                    }
-                  } else if (numbersStr.contains(result)) {
-                    RegExp regex = RegExp('$result\\s*\\(₹?([0-9]+)\\)');
-                    var match = regex.firstMatch(numbersStr);
-                    int pts = match != null ? int.parse(match.group(1)!) : 0;
-                    if (pts > 0) {
-                      winAmount += (pts * 95).toDouble();
-                    }
-                  }
-                }
-
-                if (type == "Harup") {
-                  if (bet.containsKey('andarMap') && bet['andarMap'] != null) {
-                    Map<String, dynamic> aMap = Map<String, dynamic>.from(bet['andarMap']);
-                    if (aMap.containsKey(andarDigit)) {
-                      int pts = (aMap[andarDigit] as num).toInt();
-                      winAmount += (pts * 9.5);
-                    }
-                  }
-                  if (bet.containsKey('baharMap') && bet['baharMap'] != null) {
-                    Map<String, dynamic> bMap = Map<String, dynamic>.from(bet['baharMap']);
-                    if (bMap.containsKey(baharDigit)) {
-                      int pts = (bMap[baharDigit] as num).toInt();
-                      winAmount += (pts * 9.5);
-                    }
-                  }
-                }
-
-                if (winAmount > 0 && userMob.isNotEmpty) {
-                  winnersCount++;
-                  try {
-                    await firestore.collection('users').doc(userMob).set({
-                      'balance': FieldValue.increment(winAmount),
-                    }, SetOptions(merge: true));
-
-                    await doc.reference.update({
-                      'status': 'Won ₹${winAmount.toStringAsFixed(0)}',
-                      'winningAmount': winAmount,
-                    });
-                  } catch (e) {
-                    debugPrint("Credit Error: $e");
-                  }
-                } else {
-                  await doc.reference.update({'status': 'Lost'});
-
-                  try {
-                    var uDoc = await firestore.collection('users').doc(userMob).get();
-                    if (uDoc.exists) {
-                      String refMobile = uDoc.data()?['referredBy'] ?? '';
-                      if (refMobile.isNotEmpty && betAmt > 0) {
-                        double commission = (betAmt * 0.07);
-                        await firestore.collection('users').doc(refMobile).set({
-                          'balance': FieldValue.increment(commission),
-                          'referralEarnings': FieldValue.increment(commission),
-                        }, SetOptions(merge: true));
-
-                        await firestore.collection('referral_commissions').add({
-                          'fromUser': userMob,
-                          'toReferrer': refMobile,
-                          'betAmount': betAmt,
-                          'commission': commission,
+                        await firestore.collection('results_history').doc("${chosenDate}_$marketName").set({
                           'market': marketName,
+                          'number': result,
+                          'date': chosenDate,
                           'timestamp': FieldValue.serverTimestamp(),
                         });
-                      }
-                    }
-                  } catch (e) {
-                    debugPrint("Commission Error: $e");
-                  }
-                }
-              }
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: Colors.green,
-                  content: Text(
-                    isReDeclaration
-                        ? "$marketName Result Sudhar Kar $result Kar Diya Gaya! $winnersCount Naye Winners Ko Credit Ho Gaya."
-                        : "$marketName Result $result Ghosit! $winnersCount Winners Ko Credit Ho Gaya.",
+                        // 2. FETCH BETS FOR ROLLBACK & PAYOUT (SIMPLE MARKET QUERY)
+                        var marketBets = await firestore
+                            .collection('bets')
+                            .where('market', isEqualTo: marketName)
+                            .get();
+
+                        // Agar result change ho raha hai toh purani winning reverse karein
+                        if (isReDeclaration && existingResult != result) {
+                          for (var doc in marketBets.docs) {
+                            var data = doc.data();
+                            String st = data['status']?.toString() ?? '';
+                            if (st.contains('Won')) {
+                              double prevWon = ((data['winningAmount'] ?? 0) as num).toDouble();
+                              String uMob = data['userMobile'] ?? '';
+                              if (prevWon > 0 && uMob.isNotEmpty) {
+                                try {
+                                  await firestore.collection('users').doc(uMob).update({
+                                    'balance': FieldValue.increment(-prevWon),
+                                  });
+                                } catch (_) {}
+                              }
+                            }
+                            await doc.reference.update({
+                              'status': 'Pending',
+                              'winningAmount': 0.0,
+                            });
+                          }
+
+                          // Purana referral commission reverse karein
+                          var oldComms = await firestore
+                              .collection('referral_commissions')
+                              .where('market', isEqualTo: marketName)
+                              .get();
+
+                          for (var cDoc in oldComms.docs) {
+                            double comm = ((cDoc.data()['commission'] ?? 0) as num).toDouble();
+                            String refMob = cDoc.data()['toReferrer'] ?? '';
+                            if (comm > 0 && refMob.isNotEmpty) {
+                              try {
+                                await firestore.collection('users').doc(refMob).update({
+                                  'balance': FieldValue.increment(-comm),
+                                  'referralEarnings': FieldValue.increment(-comm),
+                                });
+                              } catch (_) {}
+                            }
+                            await cDoc.reference.delete();
+                          }
+                        }
+
+                        // 3. NAYE RESULT KE ACCORDING PAYOUT CALCULATION
+                        String andarDigit = result.substring(0, 1);
+                        String baharDigit = result.substring(1, 2);
+
+                        var freshBets = await firestore
+                            .collection('bets')
+                            .where('market', isEqualTo: marketName)
+                            .get();
+
+                        int winnersCount = 0;
+
+                        for (var doc in freshBets.docs) {
+                          var bet = doc.data();
+                          String type = bet['type'] ?? '';
+                          String userMob = bet['userMobile'] ?? '';
+                          String numbersStr = bet['numbers']?.toString() ?? '';
+                          double betAmt = ((bet['amount'] ?? 0) as num).toDouble();
+                          double winAmount = 0.0;
+
+                          if (type == "Jodi") {
+                            if (bet.containsKey('betMap') && bet['betMap'] != null) {
+                              Map<String, dynamic> betMap = Map<String, dynamic>.from(bet['betMap']);
+                              if (betMap.containsKey(result)) {
+                                int betPoints = (betMap[result] as num).toInt();
+                                winAmount += (betPoints * 95).toDouble();
+                              }
+                            } else if (numbersStr.contains(result)) {
+                              RegExp regex = RegExp('$result\\s*\\(₹?([0-9]+)\\)');
+                              var match = regex.firstMatch(numbersStr);
+                              int pts = match != null ? int.parse(match.group(1)!) : 0;
+                              if (pts > 0) {
+                                winAmount += (pts * 95).toDouble();
+                              }
+                            }
+                          }
+
+                          if (type == "Harup") {
+                            if (bet.containsKey('andarMap') && bet['andarMap'] != null) {
+                              Map<String, dynamic> aMap = Map<String, dynamic>.from(bet['andarMap']);
+                              if (aMap.containsKey(andarDigit)) {
+                                int pts = (aMap[andarDigit] as num).toInt();
+                                winAmount += (pts * 9.5);
+                              }
+                            }
+                            if (bet.containsKey('baharMap') && bet['baharMap'] != null) {
+                              Map<String, dynamic> bMap = Map<String, dynamic>.from(bet['baharMap']);
+                              if (bMap.containsKey(baharDigit)) {
+                                int pts = (bMap[baharDigit] as num).toInt();
+                                winAmount += (pts * 9.5);
+                              }
+                            }
+                          }
+
+                          if (winAmount > 0 && userMob.isNotEmpty) {
+                            winnersCount++;
+                            try {
+                              await firestore.collection('users').doc(userMob).set({
+                                'balance': FieldValue.increment(winAmount),
+                              }, SetOptions(merge: true));
+
+                              await doc.reference.update({
+                                'status': 'Won ₹${winAmount.toStringAsFixed(0)}',
+                                'winningAmount': winAmount,
+                              });
+                            } catch (e) {
+                              debugPrint("Credit Error: $e");
+                            }
+                          } else {
+                            await doc.reference.update({'status': 'Lost'});
+
+                            try {
+                              var uDoc = await firestore.collection('users').doc(userMob).get();
+                              if (uDoc.exists) {
+                                String refMobile = uDoc.data()?['referredBy'] ?? '';
+                                if (refMobile.isNotEmpty && betAmt > 0) {
+                                  double commission = (betAmt * 0.07);
+                                  await firestore.collection('users').doc(refMobile).set({
+                                    'balance': FieldValue.increment(commission),
+                                    'referralEarnings': FieldValue.increment(commission),
+                                  }, SetOptions(merge: true));
+
+                                  await firestore.collection('referral_commissions').add({
+                                    'fromUser': userMob,
+                                    'toReferrer': refMobile,
+                                    'betAmount': betAmt,
+                                    'commission': commission,
+                                    'market': marketName,
+                                    'timestamp': FieldValue.serverTimestamp(),
+                                  });
+                                }
+                              }
+                            } catch (e) {
+                              debugPrint("Commission Error: $e");
+                            }
+                          }
+                        }
+
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: Colors.green,
+                            content: Text("$marketName Result Tarikh $chosenDate par '$result' Update Ho Gaya! ($winnersCount Winners)"),
+                          ),
+                        );
+                      } catch (e) {
+                        setDialogState(() => isProcessing = false);
+                        showDialog(
+                          context: context,
+                          builder: (c) => AlertDialog(
+                            title: const Text("Error Aaya", style: TextStyle(color: Colors.redAccent)),
+                            content: Text("$e"),
+                            actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text("OK"))],
+                          ),
+                        );
+                      }
+                    },
+                    child: Text(isReDeclaration ? "SUDHAR & PAY" : "Declare & Pay", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
-                ),
-              );
-            },
-            child: Text(isReDeclaration ? "SUDHAR & PAY" : "Declare & Pay", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+                ]
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -2931,7 +2979,7 @@ class WithdrawalListScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 20. TERMS & CONDITIONS SCREEN (SHUDDH HINDI) -----------------
+// ----------------- 20. TERMS & CONDITIONS SCREEN -----------------
 class TermsAndConditionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
