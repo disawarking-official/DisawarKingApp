@@ -63,6 +63,13 @@ String currentLoggedInUserName = "";
 const String adminMobile = "9761630128";
 const String officialWhatsAppNumber = "917409989270";
 
+// Check if today is the last day of the current month (28/29 Feb, 30th or 31st)
+bool isMonthEndToday() {
+  DateTime now = DateTime.now();
+  DateTime tomorrow = now.add(const Duration(days: 1));
+  return tomorrow.month != now.month;
+}
+
 class MarketConfig {
   final String name;
   final String hindiName;
@@ -90,15 +97,29 @@ class MarketConfig {
   }
 
   bool isOpen() {
-    return DateTime.now().isBefore(getCloseDateTime());
+    DateTime now = DateTime.now();
+    // Month-End Rule: On the last day of the month, after 04:00 AM all bidding is locked
+    if (isMonthEndToday()) {
+      if (name != "DISAWAR" || now.hour >= 4) {
+        return false;
+      }
+    }
+    return now.isBefore(getCloseDateTime());
   }
 
   bool isWithin2Hours() {
+    if (!isOpen()) return false;
     Duration diff = getCloseDateTime().difference(DateTime.now());
     return diff.inMinutes > 0 && diff.inMinutes <= 120;
   }
 
   String getRemainingTimeStr() {
+    if (isMonthEndToday()) {
+      DateTime now = DateTime.now();
+      if (name != "DISAWAR" || now.hour >= 4) {
+        return "Month End Closed";
+      }
+    }
     DateTime now = DateTime.now();
     DateTime close = getCloseDateTime();
     if (now.isAfter(close)) return "Closed";
@@ -728,7 +749,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ----------------- 5. HOME SCREEN -----------------
+// ----------------- 5. HOME SCREEN (WITH MONTH-END BANNER & STATUS) -----------------
 class HomeLiveResultsScreen extends StatefulWidget {
   @override
   _HomeLiveResultsScreenState createState() => _HomeLiveResultsScreenState();
@@ -753,6 +774,8 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    bool isMonthEnd = isMonthEndToday();
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -838,6 +861,28 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                   return ListView(
                     padding: const EdgeInsets.all(12),
                     children: [
+                      if (isMonthEnd)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.redAccent),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.event_busy, color: Colors.redAccent, size: 28),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  "⚠️ आज महीने का अंतिम दिन (Month End) है। सभी बाज़ार बंद हैं। कोई नई बाज़ी नहीं लगेगी।",
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
@@ -865,13 +910,24 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                       const SizedBox(height: 8),
                       ...appMarkets.map((market) {
                         String resultNum = liveResults[market.name] ?? "XX";
+                        String remainingStr = market.getRemainingTimeStr();
+
                         return Card(
                           color: const Color(0xFF1E293B),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
                             title: Text("${market.hindiName} (${market.name})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                            subtitle: Text("Result Time: ${market.resultTimeStr} | Time Left: ${market.getRemainingTimeStr()}", style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                            subtitle: Text(
+                              remainingStr == "Month End Closed"
+                                  ? "Result: ${market.resultTimeStr} | स्थिति: महीना बंद (CLOSED)"
+                                  : "Result Time: ${market.resultTimeStr} | Time Left: $remainingStr",
+                              style: TextStyle(
+                                color: remainingStr == "Month End Closed" ? Colors.redAccent : Colors.white54,
+                                fontSize: 11,
+                                fontWeight: remainingStr == "Month End Closed" ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                               decoration: BoxDecoration(
@@ -930,6 +986,7 @@ class _GameMarketsListScreenState extends State<GameMarketsListScreen> {
           final market = appMarkets[index];
           final bool isOpen = market.isOpen();
           final bool isLast2Hours = market.isWithin2Hours();
+          final String timeLeft = market.getRemainingTimeStr();
 
           return Card(
             color: const Color(0xFF1E293B),
@@ -944,7 +1001,10 @@ class _GameMarketsListScreenState extends State<GameMarketsListScreen> {
                       children: [
                         Text("${market.hindiName} (${market.name})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFF59E0B))),
                         const SizedBox(height: 4),
-                        Text("Band hone me: ${market.getRemainingTimeStr()}", style: TextStyle(color: isOpen ? Colors.greenAccent : Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                        Text(
+                          timeLeft == "Month End Closed" ? "महीना बंद (Month End Closed)" : "Band hone me: $timeLeft",
+                          style: TextStyle(color: isOpen ? Colors.greenAccent : Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
                         Text("Close Time: ${market.closeTimeStr}", style: const TextStyle(color: Colors.white54, fontSize: 11)),
                         if (isOpen && isLast2Hours)
                           const Padding(
@@ -976,7 +1036,10 @@ class _GameMarketsListScreenState extends State<GameMarketsListScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.redAccent),
                       ),
-                      child: const Text("CLOSED", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text(
+                        timeLeft == "Month End Closed" ? "MONTH END CLOSED" : "CLOSED",
+                        style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
                     ),
                 ],
               ),
@@ -1074,7 +1137,26 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
 
   void _submitBids() async {
     if (!widget.market.isOpen()) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Market Band Ho Chuka Hai!")));
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          title: const Text("बाज़ार बंद है", style: TextStyle(color: Colors.redAccent)),
+          content: Text(
+            isMonthEndToday()
+                ? "महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं। आज कोई बिड नहीं लग सकती।"
+                : "इस बाज़ार का समय समाप्त हो चुका है।",
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("ठीक है", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            )
+          ],
+        ),
+      );
       return;
     }
     if (totalAmount <= 0) {
@@ -1253,7 +1335,26 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
 
   void _submitHarup() async {
     if (!widget.market.isOpen()) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Market Band Ho Chuka Hai!")));
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          title: const Text("बाज़ार बंद है", style: TextStyle(color: Colors.redAccent)),
+          content: Text(
+            isMonthEndToday()
+                ? "महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं। आज कोई बिड नहीं लग सकती।"
+                : "इस बाज़ार का समय समाप्त हो चुका है।",
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("ठीक है", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            )
+          ],
+        ),
+      );
       return;
     }
     if (total <= 0) return;
@@ -1428,7 +1529,26 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
 
   void _submitCrossingBids() async {
     if (!widget.market.isOpen()) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Market Band Ho Chuka Hai!")));
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          title: const Text("बाज़ार बंद है", style: TextStyle(color: Colors.redAccent)),
+          content: Text(
+            isMonthEndToday()
+                ? "महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं। आज कोई बिड नहीं लग सकती।"
+                : "इस बाज़ार का समय समाप्त हो चुका है।",
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("ठीक है", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            )
+          ],
+        ),
+      );
       return;
     }
     if (generatedJodis.isEmpty || calculatedTotalAmount <= 0) {
@@ -2237,7 +2357,7 @@ class ReferAndEarnScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 17. MASTER ADMIN PANEL (WITH DELETE/CLEAR WRONG DATE RESULTS) -----------------
+// ----------------- 17. MASTER ADMIN PANEL (DATE-SMART DECLARE & INSTANT OVERRIDE) -----------------
 class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
@@ -2331,7 +2451,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
 
   String _getDefaultGameDate(String marketName) {
     DateTime now = DateTime.now();
-    // Gali midnight shift logic
     if (marketName == "GALI" && now.hour < 4) {
       DateTime yesterday = now.subtract(const Duration(days: 1));
       return yesterday.day.toString().padLeft(2, '0');
@@ -2339,7 +2458,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
     return now.day.toString().padLeft(2, '0');
   }
 
-  // DELETE / CLEAR WRONG DATE ENTRY FROM CHART
   void _clearWrongDateResult(BuildContext context, String marketName) {
     final TextEditingController dateCtrl = TextEditingController(text: "30");
 
@@ -2376,10 +2494,8 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
               Navigator.pop(ctx);
 
               try {
-                // Delete from results_history
                 await FirebaseFirestore.instance.collection('results_history').doc("${dt}_$marketName").delete();
                 
-                // If live result holds this date, clear it
                 var liveDoc = await FirebaseFirestore.instance.collection('results').doc(marketName).get();
                 if (liveDoc.exists && liveDoc.data()?['date'] == dt) {
                   await FirebaseFirestore.instance.collection('results').doc(marketName).set({
@@ -2536,9 +2652,9 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           }
 
                           var oldComms = await firestore
-                              .collection('referral_commissions')
-                              .where('market', isEqualTo: marketName)
-                              .get();
+                            .collection('referral_commissions')
+                            .where('market', isEqualTo: marketName)
+                            .get();
 
                           for (var cDoc in oldComms.docs) {
                             double comm = ((cDoc.data()['commission'] ?? 0) as num).toDouble();
@@ -3061,6 +3177,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
         padding: EdgeInsets.all(16),
         child: Text(
           "• अंतिम 2 घंटे में प्रति जोड़ी अधिकतम ₹200 की सीमा लागू होगी।\n"
+          "• महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं।\n"
           "• कम से कम पैसे जोड़ें (Add Money): ₹50\n"
           "• कम से कम निकासी (Withdrawal): ₹500\n"
           "• निकासी का समय: प्रतिदिन सुबह 8:00 AM से दोपहर 2:00 PM तक।\n"
