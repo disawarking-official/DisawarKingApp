@@ -62,13 +62,13 @@ String currentLoggedInUserMobile = "";
 String currentLoggedInUserName = "";
 const String adminMobile = "9761630128";
 
-// Live Config State (Fetched directly from Firestore)
 String dynamicWhatsAppNumber = "917409989270";
 String dynamicUpiId = "9761630128@ybl";
 String dynamicNoticeText = "";
 bool dynamicEmergencyLock = false;
 String dynamicLatestApkUrl = "";
-String dynamicTermsText = "• अंतिम 2 घंटे में प्रति जोड़ी अधिकतम ₹200 की सीमा लागू होगी।\n"
+String dynamicTermsText = "• जोड़ी रेट: 10 का 900 ₹ | हरूफ रेट: 10 का 90 ₹।\n"
+    "• अंतिम 2 घंटे में प्रति जोड़ी अधिकतम ₹200 की सीमा लागू होगी।\n"
     "• महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं।\n"
     "• कम से कम पैसे जोड़ें (Add Money): ₹50\n"
     "• कम से कम निकासी (Withdrawal): ₹500\n"
@@ -730,7 +730,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   }
 }
 
-// ----------------- 4. MAIN BOTTOM NAVIGATION (WITH LIVE CONFIG LISTENER) -----------------
+// ----------------- 4. MAIN BOTTOM NAVIGATION (5 CLEAN TABS - NO DUPLICATE RESULT BUTTON) -----------------
 class MainNavigationScreen extends StatefulWidget {
   @override
   _MainNavigationScreenState createState() => _MainNavigationScreenState();
@@ -743,7 +743,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    // Live listen to remote config updates
     _configSub = FirebaseFirestore.instance.collection('app_settings').doc('config').snapshots().listen((snap) {
       if (snap.exists && snap.data() != null) {
         var d = snap.data() as Map<String, dynamic>;
@@ -809,7 +808,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     HomeLiveResultsScreen(),
     GameMarketsListScreen(),
     CombinedAllMarketsChartScreen(),
-    ResultsHistoryScreen(),
     WalletScreen(),
     MoreMenuScreen(),
   ];
@@ -829,7 +827,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Home"),
           BottomNavigationBarItem(icon: Icon(Icons.sports_esports), label: "Play Game"),
           BottomNavigationBarItem(icon: Icon(Icons.table_chart), label: "Chart"),
-          BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), label: "Results"),
           BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: "Wallet"),
           BottomNavigationBarItem(icon: Icon(Icons.menu), label: "More"),
         ],
@@ -1090,7 +1087,7 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
   }
 }
 
-// ----------------- 6. PLAY GAME MARKET LIST -----------------
+// ----------------- 6. PLAY GAME MARKET LIST (DUPLICATE MONTH-END TEXT REMOVED) -----------------
 class GameMarketsListScreen extends StatefulWidget {
   @override
   _GameMarketsListScreenState createState() => _GameMarketsListScreenState();
@@ -1140,12 +1137,12 @@ class _GameMarketsListScreenState extends State<GameMarketsListScreen> {
                       children: [
                         Text("${market.hindiName} (${market.name})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFF59E0B))),
                         const SizedBox(height: 4),
-                        Text(
-                          timeLeft == "Month End Closed"
-                              ? "महीना बंद (Month End Closed)"
-                              : (timeLeft == "Maintenance Mode" ? "सिस्टम मेंटेनेंस" : "Band hone me: $timeLeft"),
-                          style: TextStyle(color: isOpen ? Colors.greenAccent : Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
+                        // Clean: Only show timer if not month-end closed to avoid duplication
+                        if (timeLeft != "Month End Closed" && timeLeft != "Maintenance Mode")
+                          Text(
+                            "Band hone me: $timeLeft",
+                            style: TextStyle(color: isOpen ? Colors.greenAccent : Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
                         Text("Close Time: ${market.closeTimeStr}", style: const TextStyle(color: Colors.white54, fontSize: 11)),
                         if (isOpen && isLast2Hours)
                           const Padding(
@@ -1192,7 +1189,7 @@ class _GameMarketsListScreenState extends State<GameMarketsListScreen> {
   }
 }
 
-// ----------------- 7. GAME MODE SELECT -----------------
+// ----------------- 7. GAME MODE SELECT (NEW 10 KA 900 / 10 KA 90 RATES) -----------------
 class GameModeSelectScreen extends StatelessWidget {
   final MarketConfig market;
   GameModeSelectScreen({required this.market});
@@ -1212,14 +1209,14 @@ class GameModeSelectScreen extends StatelessWidget {
                 Column(
                   children: [
                     Text("Jodi Rate", style: TextStyle(color: Colors.white60, fontSize: 13)),
-                    Text("10 ka 950 ₹", style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text("10 ka 900 ₹", style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 18)),
                   ],
                 ),
                 SizedBox(height: 35, width: 1, child: VerticalDivider(color: Colors.white24)),
                 Column(
                   children: [
                     Text("Haruff Rate", style: TextStyle(color: Colors.white60, fontSize: 13)),
-                    Text("10 ka 95 ₹", style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text("10 ka 90 ₹", style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 18)),
                   ],
                 ),
               ],
@@ -1256,7 +1253,6 @@ class GameModeSelectScreen extends StatelessWidget {
 }
 
 // ----------------- WALLET DEDUCTION HELPER FUNCTION -----------------
-// Deducts points from depositBalance first, then winningBalance
 Future<bool> deductGamePoints(String mobile, double points) async {
   var uRef = FirebaseFirestore.instance.collection('users').doc(mobile);
   var snap = await uRef.get();
@@ -1972,46 +1968,7 @@ class CombinedAllMarketsChartScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 12. RESULTS SCREEN -----------------
-class ResultsHistoryScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("All Game Results")),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('results').snapshots(),
-        builder: (context, snapshot) {
-          Map<String, String> liveMap = {};
-          if (snapshot.hasData) {
-            for (var d in snapshot.data!.docs) {
-              liveMap[d.id] = d['number']?.toString() ?? "--";
-            }
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: appMarkets.length,
-            itemBuilder: (context, index) {
-              final m = appMarkets[index];
-              String n = liveMap[m.name] ?? "XX";
-              return Card(
-                color: const Color(0xFF1E293B),
-                child: ListTile(
-                  leading: const Icon(Icons.calendar_today, color: Color(0xFFF59E0B), size: 20),
-                  title: Text("Timing: ${m.resultTimeStr}", style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                  subtitle: Text("${m.hindiName} (${m.name})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                  trailing: Text(n, style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 24, fontWeight: FontWeight.bold)),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ----------------- 13. WALLET SCREEN (WINNING VS DEPOSIT BALANCE SEPARATION) -----------------
+// ----------------- 12. WALLET SCREEN -----------------
 class WalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -2123,7 +2080,7 @@ class WalletScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 14. ADD MONEY SCREEN -----------------
+// ----------------- 13. ADD MONEY SCREEN -----------------
 class AddMoneyPaymentScreen extends StatefulWidget {
   @override
   _AddMoneyPaymentScreenState createState() => _AddMoneyPaymentScreenState();
@@ -2209,7 +2166,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   }
 }
 
-// ----------------- 15. WITHDRAW SCREEN (ONLY WINNING BALANCE ALLOWED) -----------------
+// ----------------- 14. WITHDRAW SCREEN (ONLY WINNING BALANCE ALLOWED) -----------------
 class WithdrawRequestScreen extends StatefulWidget {
   @override
   _WithdrawRequestScreenState createState() => _WithdrawRequestScreenState();
@@ -2346,7 +2303,6 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
         "timestamp": FieldValue.serverTimestamp(),
       });
 
-      // Deduct exclusively from winning balance
       await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).update({
         'winningBalance': FieldValue.increment(-amt),
       });
@@ -2467,7 +2423,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
   }
 }
 
-// ----------------- 16. MORE MENU SCREEN -----------------
+// ----------------- 15. MORE MENU SCREEN -----------------
 class MoreMenuScreen extends StatelessWidget {
   void _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -2583,7 +2539,7 @@ class ReferAndEarnScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 17. MASTER ADMIN PANEL (WITH LIVE GAME TIMINGS & T&C CONTROLS) -----------------
+// ----------------- 16. MASTER ADMIN PANEL (RESULT ENGINE 10 KA 900 & 10 KA 90) -----------------
 class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
@@ -2601,7 +2557,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
   bool _emergencyLock = dynamicEmergencyLock;
   bool _isSavingSettings = false;
 
-  // Controllers for each game time
   final Map<String, TextEditingController> _closeTimeControllers = {};
   final Map<String, TextEditingController> _resultTimeControllers = {};
 
@@ -2964,36 +2919,38 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           double betAmt = ((bet['amount'] ?? 0) as num).toDouble();
                           double winAmount = 0.0;
 
+                          // 10 ka 900 rate (90 guna)
                           if (type == "Jodi") {
                             if (bet.containsKey('betMap') && bet['betMap'] != null) {
                               Map<String, dynamic> betMap = Map<String, dynamic>.from(bet['betMap']);
                               if (betMap.containsKey(result)) {
                                 int betPoints = (betMap[result] as num).toInt();
-                                winAmount += (betPoints * 95).toDouble();
+                                winAmount += (betPoints * 90).toDouble();
                               }
                             } else if (numbersStr.contains(result)) {
                               RegExp regex = RegExp('$result\\s*\\(₹?([0-9]+)\\)');
                               var match = regex.firstMatch(numbersStr);
                               int pts = match != null ? int.parse(match.group(1)!) : 0;
                               if (pts > 0) {
-                                winAmount += (pts * 95).toDouble();
+                                winAmount += (pts * 90).toDouble();
                               }
                             }
                           }
 
+                          // 10 ka 90 rate (9 guna)
                           if (type == "Harup") {
                             if (bet.containsKey('andarMap') && bet['andarMap'] != null) {
                               Map<String, dynamic> aMap = Map<String, dynamic>.from(bet['andarMap']);
                               if (aMap.containsKey(andarDigit)) {
                                 int pts = (aMap[andarDigit] as num).toInt();
-                                winAmount += (pts * 9.5);
+                                winAmount += (pts * 9.0);
                               }
                             }
                             if (bet.containsKey('baharMap') && bet['baharMap'] != null) {
                               Map<String, dynamic> bMap = Map<String, dynamic>.from(bet['baharMap']);
                               if (bMap.containsKey(baharDigit)) {
                                 int pts = (bMap[baharDigit] as num).toInt();
-                                winAmount += (pts * 9.5);
+                                winAmount += (pts * 9.0);
                               }
                             }
                           }
@@ -3001,7 +2958,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           if (winAmount > 0 && userMob.isNotEmpty) {
                             winnersCount++;
                             try {
-                              // All winnings credited directly to Winning Wallet
                               await firestore.collection('users').doc(userMob).set({
                                 'winningBalance': FieldValue.increment(winAmount),
                               }, SetOptions(merge: true));
@@ -3192,7 +3148,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
             },
           ),
 
-          // TAB 3: DEPOSITS (WITH 5% 1st DEPOSIT BONUS SYSTEM)
+          // TAB 3: DEPOSITS (WITH 5% 1st DEPOSIT BONUS)
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('deposits').orderBy('timestamp', descending: true).limit(50).snapshots(),
             builder: (context, snapshot) {
@@ -3227,7 +3183,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                                 double finalCredit = amt;
                                 String bonusMsg = "";
 
-                                // 5% Bonus on First Deposit
                                 if (!hasDepositedBefore) {
                                   double bonus = (amt * 0.05);
                                   finalCredit = amt + bonus;
@@ -3458,7 +3413,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
   }
 }
 
-// ----------------- 18. MY PLAYED GAME SCREEN -----------------
+// ----------------- 17. MY PLAYED GAME SCREEN -----------------
 class MyPlayGameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -3525,7 +3480,7 @@ class MyPlayGameScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 19. WITHDRAWAL LIST SCREEN -----------------
+// ----------------- 18. WITHDRAWAL LIST SCREEN -----------------
 class WithdrawalListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -3571,7 +3526,7 @@ class WithdrawalListScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 20. TERMS & CONDITIONS SCREEN (DYNAMIC LIVE TEXT) -----------------
+// ----------------- 19. TERMS & CONDITIONS SCREEN (DYNAMIC LIVE TEXT) -----------------
 class TermsAndConditionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
