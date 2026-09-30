@@ -31,7 +31,7 @@ jobs:
           cp /tmp/main.dart.bak lib/main.dart
           cp /tmp/pubspec.yaml.bak pubspec.yaml
 
-          # Valid AndroidManifest.xml WITHOUT deprecated package attribute
+          # Production Ready AndroidManifest.xml
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
@@ -75,22 +75,20 @@ jobs:
           </manifest>
           EOF
 
-          # google-services.json copy
           if [ -f "google-services.json" ]; then
             cp google-services.json android/app/ || true
           fi
 
-          # minSdk 21 & MultiDex
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle || true
           sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' android/app/build.gradle || true
           sed -i '/defaultConfig {/a \        multiDexEnabled true' android/app/build.gradle || true
 
-      - name: Build Production APK
+      - name: Build Secure Obfuscated Production APK
         run: |
           flutter pub get
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/app/outputs/symbols
 
-      - name: Upload APK
+      - name: Upload Secure Production APK
         uses: actions/upload-artifact@v4
         with:
           name: DisawarKing-App
