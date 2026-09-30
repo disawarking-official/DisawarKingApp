@@ -110,7 +110,7 @@ class MarketConfig {
   }
 }
 
-// ORDER: Delhi Bazar -> Shree Ganesh -> Faridabad -> Ghaziabad -> Gali -> Disawar (Last)
+// DISAWAR SISTER MARKETS ORDER (DISAWAR LAST)
 final List<MarketConfig> appMarkets = [
   MarketConfig(name: "DELHI BAZAR", hindiName: "दिल्ली बाजार", closeHour: 14, closeMin: 50, closeTimeStr: "02:50 PM", resultTimeStr: "03:15 PM"),
   MarketConfig(name: "SHREE GANESH", hindiName: "श्री गणेश", closeHour: 16, closeMin: 00, closeTimeStr: "04:00 PM", resultTimeStr: "04:30 PM"),
@@ -2237,7 +2237,7 @@ class ReferAndEarnScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 17. MASTER ADMIN PANEL (DATE-SMART DECLARE & INSTANT OVERRIDE) -----------------
+// ----------------- 17. MASTER ADMIN PANEL (WITH DELETE/CLEAR WRONG DATE RESULTS) -----------------
 class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
@@ -2257,35 +2257,35 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
     setState(() => _isImporting = true);
 
     final List<Map<String, dynamic>> rawChart = [
-      {"date": "01", "DSWR": "", "DLBZ": "58", "SRGN": "89", "FRBD": "45", "GZBD": "86", "GALI": "81"},
-      {"date": "02", "DSWR": "69", "DLBZ": "52", "SRGN": "54", "FRBD": "19", "GZBD": "85", "GALI": "96"},
-      {"date": "03", "DSWR": "57", "DLBZ": "88", "SRGN": "20", "FRBD": "08", "GZBD": "32", "GALI": "77"},
-      {"date": "04", "DSWR": "95", "DLBZ": "18", "SRGN": "01", "FRBD": "02", "GZBD": "95", "GALI": "26"},
-      {"date": "05", "DSWR": "59", "DLBZ": "44", "SRGN": "02", "FRBD": "30", "GZBD": "68", "GALI": "37"},
-      {"date": "06", "DSWR": "78", "DLBZ": "71", "SRGN": "25", "FRBD": "88", "GZBD": "69", "GALI": "94"},
-      {"date": "07", "DSWR": "67", "DLBZ": "61", "SRGN": "17", "FRBD": "02", "GZBD": "02", "GALI": "10"},
-      {"date": "08", "DSWR": "92", "DLBZ": "84", "SRGN": "83", "FRBD": "71", "GZBD": "93", "GALI": "64"},
-      {"date": "09", "DSWR": "54", "DLBZ": "18", "SRGN": "15", "FRBD": "29", "GZBD": "93", "GALI": "69"},
-      {"date": "10", "DSWR": "93", "DLBZ": "52", "SRGN": "12", "FRBD": "15", "GZBD": "72", "GALI": "40"},
-      {"date": "11", "DSWR": "40", "DLBZ": "59", "SRGN": "32", "FRBD": "72", "GZBD": "98", "GALI": "34"},
-      {"date": "12", "DSWR": "46", "DLBZ": "81", "SRGN": "42", "FRBD": "65", "GZBD": "16", "GALI": "35"},
-      {"date": "13", "DSWR": "02", "DLBZ": "55", "SRGN": "48", "FRBD": "74", "GZBD": "47", "GALI": "72"},
-      {"date": "14", "DSWR": "35", "DLBZ": "86", "SRGN": "34", "FRBD": "30", "GZBD": "50", "GALI": "87"},
-      {"date": "15", "DSWR": "89", "DLBZ": "46", "SRGN": "28", "FRBD": "24", "GZBD": "19", "GALI": "83"},
-      {"date": "16", "DSWR": "31", "DLBZ": "68", "SRGN": "94", "FRBD": "21", "GZBD": "42", "GALI": "91"},
-      {"date": "17", "DSWR": "90", "DLBZ": "99", "SRGN": "50", "FRBD": "38", "GZBD": "34", "GALI": "73"},
-      {"date": "18", "DSWR": "49", "DLBZ": "84", "SRGN": "38", "FRBD": "36", "GZBD": "03", "GALI": "50"},
-      {"date": "19", "DSWR": "35", "DLBZ": "24", "SRGN": "20", "FRBD": "21", "GZBD": "86", "GALI": "07"},
-      {"date": "20", "DSWR": "32", "DLBZ": "47", "SRGN": "80", "FRBD": "84", "GZBD": "24", "GALI": "66"},
-      {"date": "21", "DSWR": "01", "DLBZ": "62", "SRGN": "08", "FRBD": "71", "GZBD": "70", "GALI": "32"},
-      {"date": "22", "DSWR": "73", "DLBZ": "03", "SRGN": "98", "FRBD": "42", "GZBD": "50", "GALI": "00"},
-      {"date": "23", "DSWR": "35", "DLBZ": "92", "SRGN": "10", "FRBD": "00", "GZBD": "42", "GALI": "02"},
-      {"date": "24", "DSWR": "26", "DLBZ": "27", "SRGN": "48", "FRBD": "38", "GZBD": "32", "GALI": "90"},
-      {"date": "25", "DSWR": "86", "DLBZ": "44", "SRGN": "68", "FRBD": "08", "GZBD": "63", "GALI": "37"},
-      {"date": "26", "DSWR": "48", "DLBZ": "55", "SRGN": "43", "FRBD": "09", "GZBD": "18", "GALI": "66"},
-      {"date": "27", "DSWR": "81", "DLBZ": "35", "SRGN": "07", "FRBD": "61", "GZBD": "66", "GALI": "64"},
-      {"date": "28", "DSWR": "49", "DLBZ": "66", "SRGN": "90", "FRBD": "58", "GZBD": "03", "GALI": "03"},
-      {"date": "29", "DSWR": "43", "DLBZ": "", "SRGN": "", "FRBD": "", "GZBD": "", "GALI": ""},
+      {"date": "01", "DLBZ": "58", "SRGN": "89", "FRBD": "45", "GZBD": "86", "GALI": "81", "DSWR": ""},
+      {"date": "02", "DLBZ": "52", "SRGN": "54", "FRBD": "19", "GZBD": "85", "GALI": "96", "DSWR": "69"},
+      {"date": "03", "DLBZ": "88", "SRGN": "20", "FRBD": "08", "GZBD": "32", "GALI": "77", "DSWR": "57"},
+      {"date": "04", "DLBZ": "18", "SRGN": "01", "FRBD": "02", "GZBD": "95", "GALI": "26", "DSWR": "95"},
+      {"date": "05", "DLBZ": "44", "SRGN": "02", "FRBD": "30", "GZBD": "68", "GALI": "37", "DSWR": "59"},
+      {"date": "06", "DLBZ": "71", "SRGN": "25", "FRBD": "88", "GZBD": "69", "GALI": "94", "DSWR": "78"},
+      {"date": "07", "DLBZ": "61", "SRGN": "17", "FRBD": "02", "GZBD": "02", "GALI": "10", "DSWR": "67"},
+      {"date": "08", "DLBZ": "84", "SRGN": "83", "FRBD": "71", "GZBD": "93", "GALI": "64", "DSWR": "92"},
+      {"date": "09", "DLBZ": "18", "SRGN": "15", "FRBD": "29", "GZBD": "93", "GALI": "69", "DSWR": "54"},
+      {"date": "10", "DLBZ": "52", "SRGN": "12", "FRBD": "15", "GZBD": "72", "GALI": "40", "DSWR": "93"},
+      {"date": "11", "DLBZ": "59", "SRGN": "32", "FRBD": "72", "GZBD": "98", "GALI": "34", "DSWR": "40"},
+      {"date": "12", "DLBZ": "81", "SRGN": "42", "FRBD": "65", "GZBD": "16", "GALI": "35", "DSWR": "46"},
+      {"date": "13", "DLBZ": "55", "SRGN": "48", "FRBD": "74", "GZBD": "47", "GALI": "72", "DSWR": "02"},
+      {"date": "14", "DLBZ": "86", "SRGN": "34", "FRBD": "30", "GZBD": "50", "GALI": "87", "DSWR": "35"},
+      {"date": "15", "DLBZ": "46", "SRGN": "28", "FRBD": "24", "GZBD": "19", "GALI": "83", "DSWR": "89"},
+      {"date": "16", "DLBZ": "68", "SRGN": "94", "FRBD": "21", "GZBD": "42", "GALI": "91", "DSWR": "31"},
+      {"date": "17", "DLBZ": "99", "SRGN": "50", "FRBD": "38", "GZBD": "34", "GALI": "73", "DSWR": "90"},
+      {"date": "18", "DLBZ": "84", "SRGN": "38", "FRBD": "36", "GZBD": "03", "GALI": "50", "DSWR": "49"},
+      {"date": "19", "DLBZ": "24", "SRGN": "20", "FRBD": "21", "GZBD": "86", "GALI": "07", "DSWR": "35"},
+      {"date": "20", "DLBZ": "47", "SRGN": "80", "FRBD": "84", "GZBD": "24", "GALI": "66", "DSWR": "32"},
+      {"date": "21", "DLBZ": "62", "SRGN": "08", "FRBD": "71", "GZBD": "70", "GALI": "32", "DSWR": "01"},
+      {"date": "22", "DLBZ": "03", "SRGN": "98", "FRBD": "42", "GZBD": "50", "GALI": "00", "DSWR": "73"},
+      {"date": "23", "DLBZ": "92", "SRGN": "10", "FRBD": "00", "GZBD": "42", "GALI": "02", "DSWR": "35"},
+      {"date": "24", "DLBZ": "27", "SRGN": "48", "FRBD": "38", "GZBD": "32", "GALI": "90", "DSWR": "26"},
+      {"date": "25", "DLBZ": "44", "SRGN": "68", "FRBD": "08", "GZBD": "63", "GALI": "37", "DSWR": "86"},
+      {"date": "26", "DLBZ": "55", "SRGN": "43", "FRBD": "09", "GZBD": "18", "GALI": "66", "DSWR": "48"},
+      {"date": "27", "DLBZ": "35", "SRGN": "07", "FRBD": "61", "GZBD": "66", "GALI": "64", "DSWR": "81"},
+      {"date": "28", "DLBZ": "66", "SRGN": "90", "FRBD": "58", "GZBD": "03", "GALI": "03", "DSWR": "49"},
+      {"date": "29", "DLBZ": "", "SRGN": "", "FRBD": "", "GZBD": "", "GALI": "", "DSWR": "43"},
     ];
 
     try {
@@ -2309,12 +2309,12 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
           }
         }
 
-        addEntry("DISAWAR", row['DSWR']);
         addEntry("DELHI BAZAR", row['DLBZ']);
         addEntry("SHREE GANESH", row['SRGN']);
         addEntry("FARIDABAD", row['FRBD']);
         addEntry("GHAZIABAD", row['GZBD']);
         addEntry("GALI", row['GALI']);
+        addEntry("DISAWAR", row['DSWR']);
       }
 
       await batch.commit();
@@ -2329,16 +2329,77 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
     }
   }
 
-  // Calculate default smart game date (Gali midnight shift handling)
   String _getDefaultGameDate(String marketName) {
     DateTime now = DateTime.now();
-    // Agar Gali ka result raat 12:00 AM se subah 04:00 AM ke beech khul raha hai,
-    // toh wo asal me pichle din ka result hai!
+    // Gali midnight shift logic
     if (marketName == "GALI" && now.hour < 4) {
       DateTime yesterday = now.subtract(const Duration(days: 1));
       return yesterday.day.toString().padLeft(2, '0');
     }
     return now.day.toString().padLeft(2, '0');
+  }
+
+  // DELETE / CLEAR WRONG DATE ENTRY FROM CHART
+  void _clearWrongDateResult(BuildContext context, String marketName) {
+    final TextEditingController dateCtrl = TextEditingController(text: "30");
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: Text("Galat Entry Hatao: $marketName", style: const TextStyle(color: Colors.redAccent)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Jis tarikh me se result hatana hai (jaise Gali me 30 tarikh), wo tarikh dalein. Chart me se wo cell khali (--) ho jayegi.",
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: dateCtrl,
+              keyboardType: TextInputType.number,
+              maxLength: 2,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.amber),
+              decoration: const InputDecoration(labelText: "Tarikh (Jaise: 30)", border: OutlineInputBorder(), counterText: ""),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              String dt = dateCtrl.text.trim();
+              if (dt.isEmpty) return;
+              Navigator.pop(ctx);
+
+              try {
+                // Delete from results_history
+                await FirebaseFirestore.instance.collection('results_history').doc("${dt}_$marketName").delete();
+                
+                // If live result holds this date, clear it
+                var liveDoc = await FirebaseFirestore.instance.collection('results').doc(marketName).get();
+                if (liveDoc.exists && liveDoc.data()?['date'] == dt) {
+                  await FirebaseFirestore.instance.collection('results').doc(marketName).set({
+                    'number': 'XX',
+                    'date': '',
+                  });
+                }
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(backgroundColor: Colors.green, content: Text("$marketName ki Tarikh $dt wali entry safalta se hata di gayi!")),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
+              }
+            },
+            child: const Text("HATAO (DELETE)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _declareResultAndDistribute(BuildContext context, String marketName) async {
@@ -2370,7 +2431,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(color: Colors.red.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.redAccent)),
                       child: Text(
-                        "⚠️ Is Market ka pehle se '$existingResult' khula hai.\n\nNaya number save karne par purane winners ka paisa revert hoga aur naye winners ko credit hoga.",
+                        "⚠️ Is Market ka pehle se '$existingResult' khula hai.\n\nNaya number save karne par purana galat balance wapas katega aur naye winners ko rashi mil jayegi.",
                         style: const TextStyle(color: Colors.white, fontSize: 12),
                       ),
                     ),
@@ -2432,7 +2493,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                       var firestore = FirebaseFirestore.instance;
 
                       try {
-                        // 1. INSTANT LIVE RESULT & CHART UPDATE (NO WAITING, NO FREEZING)
+                        // 1. INSTANT LIVE RESULT & CHART UPDATE
                         await firestore.collection('results').doc(marketName).set({
                           'number': result,
                           'date': chosenDate,
@@ -2447,13 +2508,12 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           'timestamp': FieldValue.serverTimestamp(),
                         });
 
-                        // 2. FETCH BETS FOR ROLLBACK & PAYOUT (SIMPLE MARKET QUERY)
+                        // 2. FETCH BETS FOR ROLLBACK & PAYOUT
                         var marketBets = await firestore
                             .collection('bets')
                             .where('market', isEqualTo: marketName)
                             .get();
 
-                        // Agar result change ho raha hai toh purani winning reverse karein
                         if (isReDeclaration && existingResult != result) {
                           for (var doc in marketBets.docs) {
                             var data = doc.data();
@@ -2475,7 +2535,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                             });
                           }
 
-                          // Purana referral commission reverse karein
                           var oldComms = await firestore
                               .collection('referral_commissions')
                               .where('market', isEqualTo: marketName)
@@ -2496,7 +2555,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           }
                         }
 
-                        // 3. NAYE RESULT KE ACCORDING PAYOUT CALCULATION
+                        // 3. NAYE RESULT KE MUTABIQ DISTRIBUTE KAREIN
                         String andarDigit = result.substring(0, 1);
                         String baharDigit = result.substring(1, 2);
 
@@ -2681,17 +2740,30 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                     return Card(
                       color: const Color(0xFF1E293B),
                       margin: const EdgeInsets.only(bottom: 10),
-                      child: ListTile(
-                        title: Text("${m.hindiName} (${m.name})", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
-                        subtitle: Text("Timing: ${m.resultTimeStr} | Current: $curNum"),
-                        trailing: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: curNum != "XX" ? Colors.orange : const Color(0xFF16A34A),
-                          ),
-                          onPressed: () => _declareResultAndDistribute(context, m.name),
-                          child: Text(
-                            curNum != "XX" ? "Change ($curNum)" : "Declare Number",
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: ListTile(
+                          title: Text("${m.hindiName} (${m.name})", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
+                          subtitle: Text("Timing: ${m.resultTimeStr} | Current: $curNum"),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.delete_forever, color: Colors.redAccent, size: 22),
+                                tooltip: "Galat Tarikh Ka Entry Hatao",
+                                onPressed: () => _clearWrongDateResult(context, m.name),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: curNum != "XX" ? Colors.orange : const Color(0xFF16A34A),
+                                ),
+                                onPressed: () => _declareResultAndDistribute(context, m.name),
+                                child: Text(
+                                  curNum != "XX" ? "Change ($curNum)" : "Declare",
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
