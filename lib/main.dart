@@ -4,35 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/Bhai, yeh remote control system aapke app ke andar bilkul ready kar diya hai. Ab se aapko chhote-mote badlaav ke liye baar-baar APK build karke install karne ki bilkul zaroorat nahi padegi.
-
----
-
-### Is Naye System Me Kya-Kya Live Control Hoga?
-
-1. **Master Admin Panel me naya "Settings" Tab:**
-   - **WhatsApp Support Number:** Yahan se number change karte hi sabhi users ke phone par naya chat link khulega.
-   - **Deposit UPI ID:** UPI address badalte hi Add Money screen par naya QR code aur payment address automatic generate hoga.
-   - **Live Alert / Notice:** Agar koi festival ya emergency notice chalana ho, toh yahan text likhkar save karte hi sabhi users ke Home screen par live banner dikhega.
-   - **Emergency Game Lock (Maintenance Switch):** Is switch ko on karte hi sabhi games temporarily pause ho jayenge aur koi user bid nahi laga sakega.
-   - **Download Link (In-App Auto Update):** Nayi APK ka direct link daalne par purani app wale users ko screen par auto-update popup dikhega.
-
-2. **Realtime Sync:**
-   - Jaise hi aap Admin Panel me **"SAVE SETTINGS"** dabayenge, bina app restart kiye sabhi active users ke screen par nayi settings apply ho jayengi.
-
----
-
-### Step: `lib/main.dart` Ko Replace Karein
-
-GitHub par **`lib/main.dart`** open karein, **Ctrl + A** karke pura clear karein, aur ye complete code paste karke **Commit** kar dein:
-
-```dart
-import 'dart:async';
-import 'dart:math';
-import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
@@ -177,7 +148,7 @@ final List<MarketConfig> appMarkets = [
 ];
 
 Future<void> openWhatsAppChat({String message = "Namaste DisawarKing Support, mujhe sahayata chahiye."}) async {
-  final Uri url = Uri.parse("[https://wa.me/$dynamicWhatsAppNumber?text=$](https://wa.me/$dynamicWhatsAppNumber?text=$){Uri.encodeComponent(message)}");
+  final Uri url = Uri.parse("https://wa.me/$dynamicWhatsAppNumber?text=${Uri.encodeComponent(message)}");
   try {
     await launchUrl(url, mode: LaunchMode.externalApplication);
   } catch (_) {}
@@ -755,7 +726,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    // Live listen to remote config updates
     _configSub = FirebaseFirestore.instance.collection('app_settings').doc('config').snapshots().listen((snap) {
       if (snap.exists && snap.data() != null) {
         var d = snap.data() as Map<String, dynamic>;
@@ -767,7 +737,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           dynamicLatestApkUrl = d['apkUrl'] ?? "";
         });
 
-        // Show Update Popup if new APK URL is provided
         if (dynamicLatestApkUrl.isNotEmpty && mounted) {
           _showUpdateNoticeDialog(dynamicLatestApkUrl);
         }
@@ -2111,8 +2080,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Dynamic QR URL based on live admin UPI ID
-    final String dynamicQrUrl = "[https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay%3Fpa=$](https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay%3Fpa=$){Uri.encodeComponent(dynamicUpiId)}%26pn=DisawarKing%26cu=INR";
+    final String dynamicQrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay%3Fpa=${Uri.encodeComponent(dynamicUpiId)}%26pn=DisawarKing%26cu=INR";
 
     return Scaffold(
       appBar: AppBar(title: const Text("Add Money (Deposit)")),
@@ -2484,7 +2452,7 @@ class ReferAndEarnScreen extends StatelessWidget {
                       icon: const Icon(Icons.share, color: Colors.white),
                       label: const Text("SHARE ON WHATSAPP", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       onPressed: () {
-                        String shareMsg = "Disawar King App download karein aur khelein! Register karte waqt mera Referral Code dalein: $currentLoggedInUserMobile\nDownload App: [https://disawarking.app](https://disawarking.app)";
+                        String shareMsg = "Disawar King App download karein aur khelein! Register karte waqt mera Referral Code dalein: $currentLoggedInUserMobile\nDownload App: https://disawarking.app";
                         openWhatsAppChat(message: shareMsg);
                       },
                     ),
@@ -2499,7 +2467,7 @@ class ReferAndEarnScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 17. MASTER ADMIN PANEL (WITH REMOTE LIVE SETTINGS TAB) -----------------
+// ----------------- 17. MASTER ADMIN PANEL (NO CONST ERROR FIXED) -----------------
 class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
@@ -2509,7 +2477,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
   late TabController _tabController;
   bool _isImporting = false;
 
-  // Settings Controllers
   final _whatsappCtrl = TextEditingController(text: dynamicWhatsAppNumber);
   final _upiCtrl = TextEditingController(text: dynamicUpiId);
   final _noticeCtrl = TextEditingController(text: dynamicNoticeText);
@@ -2976,12 +2943,13 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
           controller: _tabController,
           indicatorColor: Colors.amber,
           isScrollable: true,
-          tabs: const [
-            Tab(text: "Results"),
-            Tab(text: "Live Bets"),
-            Tab(text: "Deposits"),
-            Tab(text: "Withdrawals"),
-            Tab(text: "Settings"),
+          // Fixed: Removed invalid 'const' keyword that caused compilation error
+          tabs: [
+            const Tab(text: "Results"),
+            const Tab(text: "Live Bets"),
+            const Tab(text: "Deposits"),
+            const Tab(text: "Withdrawals"),
+            const Tab(text: "Settings"),
           ],
         ),
       ),
@@ -3217,6 +3185,74 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                 },
               );
             },
+          ),
+
+          // TAB 5: REMOTE SETTINGS (LIVE CONTROL)
+          ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Card(
+                color: const Color(0xFF1E293B),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("App Remote Live Settings", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 6),
+                      const Text("Yahan se setting badal kar Save karein, sabhi users ke app me turant live change ho jayega.", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                      const Divider(color: Colors.white12, height: 20),
+                      TextField(
+                        controller: _whatsappCtrl,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(labelText: "WhatsApp Support Number (Jaise 917409989270)", border: OutlineInputBorder()),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _upiCtrl,
+                        decoration: const InputDecoration(labelText: "Deposit UPI ID (Jaise 9761630128@ybl)", border: OutlineInputBorder()),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _noticeCtrl,
+                        maxLines: 2,
+                        decoration: const InputDecoration(labelText: "Home Alert / Notice (Khali chhodenge toh nahi dikhega)", border: OutlineInputBorder()),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _apkUrlCtrl,
+                        decoration: const InputDecoration(labelText: "Auto-Update APK Direct Link (Optional)", border: OutlineInputBorder()),
+                      ),
+                      const SizedBox(height: 14),
+                      SwitchListTile(
+                        title: const Text("Emergency Game Lock (Maintenance Mode)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                        subtitle: const Text("On karne par sabhi markets me nayi bid lagna temporary pause ho jayega", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                        value: _emergencyLock,
+                        activeColor: Colors.amber,
+                        onChanged: (val) => setState(() => _emergencyLock = val),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
+                          icon: _isSavingSettings
+                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Icon(Icons.cloud_done, color: Colors.white),
+                          label: Text(
+                            _isSavingSettings ? "SAVING..." : "SAVE SETTINGS LIVE",
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          onPressed: _isSavingSettings ? null : _saveRemoteSettings,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
