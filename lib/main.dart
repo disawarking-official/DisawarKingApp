@@ -4,13 +4,42 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/Bhai, yeh remote control system aapke app ke andar bilkul ready kar diya hai. Ab se aapko chhote-mote badlaav ke liye baar-baar APK build karke install karne ki bilkul zaroorat nahi padegi.
+
+---
+
+### Is Naye System Me Kya-Kya Live Control Hoga?
+
+1. **Master Admin Panel me naya "Settings" Tab:**
+   - **WhatsApp Support Number:** Yahan se number change karte hi sabhi users ke phone par naya chat link khulega.
+   - **Deposit UPI ID:** UPI address badalte hi Add Money screen par naya QR code aur payment address automatic generate hoga.
+   - **Live Alert / Notice:** Agar koi festival ya emergency notice chalana ho, toh yahan text likhkar save karte hi sabhi users ke Home screen par live banner dikhega.
+   - **Emergency Game Lock (Maintenance Switch):** Is switch ko on karte hi sabhi games temporarily pause ho jayenge aur koi user bid nahi laga sakega.
+   - **Download Link (In-App Auto Update):** Nayi APK ka direct link daalne par purani app wale users ko screen par auto-update popup dikhega.
+
+2. **Realtime Sync:**
+   - Jaise hi aap Admin Panel me **"SAVE SETTINGS"** dabayenge, bina app restart kiye sabhi active users ke screen par nayi settings apply ho jayengi.
+
+---
+
+### Step: `lib/main.dart` Ko Replace Karein
+
+GitHub par **`lib/main.dart`** open karein, **Ctrl + A** karke pura clear karein, aur ye complete code paste karke **Commit** kar dein:
+
+```dart
+import 'dart:async';
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   FlutterError.onError = (FlutterErrorDetails details) {
-    debugPrint("Flutter App Error: ${details.exception}");
+    debugPrint("Flutter Error: ${details.exception}");
   };
 
   try {
@@ -57,13 +86,18 @@ class DisawarKingApp extends StatelessWidget {
   }
 }
 
-// ----------------- CONFIG & GLOBALS -----------------
+// ----------------- DYNAMIC APP CONFIG & GLOBALS -----------------
 String currentLoggedInUserMobile = "";
 String currentLoggedInUserName = "";
 const String adminMobile = "9761630128";
-const String officialWhatsAppNumber = "917409989270";
 
-// Check if today is the last day of the current month (28/29 Feb, 30th or 31st)
+// Live Config State (Fetched directly from Firestore)
+String dynamicWhatsAppNumber = "917409989270";
+String dynamicUpiId = "9761630128@ybl";
+String dynamicNoticeText = "";
+bool dynamicEmergencyLock = false;
+String dynamicLatestApkUrl = "";
+
 bool isMonthEndToday() {
   DateTime now = DateTime.now();
   DateTime tomorrow = now.add(const Duration(days: 1));
@@ -97,8 +131,8 @@ class MarketConfig {
   }
 
   bool isOpen() {
+    if (dynamicEmergencyLock) return false;
     DateTime now = DateTime.now();
-    // Month-End Rule: On the last day of the month, after 04:00 AM all bidding is locked
     if (isMonthEndToday()) {
       if (name != "DISAWAR" || now.hour >= 4) {
         return false;
@@ -114,6 +148,7 @@ class MarketConfig {
   }
 
   String getRemainingTimeStr() {
+    if (dynamicEmergencyLock) return "Maintenance Mode";
     if (isMonthEndToday()) {
       DateTime now = DateTime.now();
       if (name != "DISAWAR" || now.hour >= 4) {
@@ -131,7 +166,7 @@ class MarketConfig {
   }
 }
 
-// DISAWAR SISTER MARKETS ORDER (DISAWAR LAST)
+// Order: Delhi Bazar -> Shree Ganesh -> Faridabad -> Ghaziabad -> Gali -> Disawar
 final List<MarketConfig> appMarkets = [
   MarketConfig(name: "DELHI BAZAR", hindiName: "दिल्ली बाजार", closeHour: 14, closeMin: 50, closeTimeStr: "02:50 PM", resultTimeStr: "03:15 PM"),
   MarketConfig(name: "SHREE GANESH", hindiName: "श्री गणेश", closeHour: 16, closeMin: 00, closeTimeStr: "04:00 PM", resultTimeStr: "04:30 PM"),
@@ -142,7 +177,7 @@ final List<MarketConfig> appMarkets = [
 ];
 
 Future<void> openWhatsAppChat({String message = "Namaste DisawarKing Support, mujhe sahayata chahiye."}) async {
-  final Uri url = Uri.parse("https://wa.me/$officialWhatsAppNumber?text=${Uri.encodeComponent(message)}");
+  final Uri url = Uri.parse("[https://wa.me/$dynamicWhatsAppNumber?text=$](https://wa.me/$dynamicWhatsAppNumber?text=$){Uri.encodeComponent(message)}");
   try {
     await launchUrl(url, mode: LaunchMode.externalApplication);
   } catch (_) {}
@@ -707,7 +742,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   }
 }
 
-// ----------------- 4. MAIN BOTTOM NAVIGATION -----------------
+// ----------------- 4. MAIN BOTTOM NAVIGATION (WITH LIVE CONFIG LISTENER) -----------------
 class MainNavigationScreen extends StatefulWidget {
   @override
   _MainNavigationScreenState createState() => _MainNavigationScreenState();
@@ -715,6 +750,63 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
+  StreamSubscription<DocumentSnapshot>? _configSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Live listen to remote config updates
+    _configSub = FirebaseFirestore.instance.collection('app_settings').doc('config').snapshots().listen((snap) {
+      if (snap.exists && snap.data() != null) {
+        var d = snap.data() as Map<String, dynamic>;
+        setState(() {
+          dynamicWhatsAppNumber = d['whatsapp'] ?? dynamicWhatsAppNumber;
+          dynamicUpiId = d['upi'] ?? dynamicUpiId;
+          dynamicNoticeText = d['notice'] ?? "";
+          dynamicEmergencyLock = d['emergencyLock'] ?? false;
+          dynamicLatestApkUrl = d['apkUrl'] ?? "";
+        });
+
+        // Show Update Popup if new APK URL is provided
+        if (dynamicLatestApkUrl.isNotEmpty && mounted) {
+          _showUpdateNoticeDialog(dynamicLatestApkUrl);
+        }
+      }
+    });
+  }
+
+  void _showUpdateNoticeDialog(String apkUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text("नया अपडेट उपलब्ध है! 🚀", style: TextStyle(color: Colors.amber)),
+        content: const Text(
+          "ऐप का एक नया और बेहतर वर्ज़न आ चुका है। सुचारू रूप से खेलने के लिए अभी अपडेट करें।",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
+            onPressed: () async {
+              final Uri u = Uri.parse(apkUrl);
+              try {
+                await launchUrl(u, mode: LaunchMode.externalApplication);
+              } catch (_) {}
+            },
+            child: const Text("UPDATE NOW", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _configSub?.cancel();
+    super.dispose();
+  }
 
   final List<Widget> _screens = [
     HomeLiveResultsScreen(),
@@ -749,7 +841,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ----------------- 5. HOME SCREEN (WITH MONTH-END BANNER & STATUS) -----------------
+// ----------------- 5. HOME SCREEN -----------------
 class HomeLiveResultsScreen extends StatefulWidget {
   @override
   _HomeLiveResultsScreenState createState() => _HomeLiveResultsScreenState();
@@ -861,6 +953,50 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                   return ListView(
                     padding: const EdgeInsets.all(12),
                     children: [
+                      if (dynamicNoticeText.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.amber),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.campaign, color: Colors.amber, size: 24),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  dynamicNoticeText,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (dynamicEmergencyLock)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.orangeAccent),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.build, color: Colors.orangeAccent, size: 24),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  "⚠️ सिस्टम मेंटेनेंस मोड में है। कुछ समय के लिए नई बिड बंद कर दी गई हैं।",
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       if (isMonthEnd)
                         Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -919,13 +1055,13 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                           child: ListTile(
                             title: Text("${market.hindiName} (${market.name})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
                             subtitle: Text(
-                              remainingStr == "Month End Closed"
-                                  ? "Result: ${market.resultTimeStr} | स्थिति: महीना बंद (CLOSED)"
+                              remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode"
+                                  ? "Result: ${market.resultTimeStr} | स्थिति: $remainingStr"
                                   : "Result Time: ${market.resultTimeStr} | Time Left: $remainingStr",
                               style: TextStyle(
-                                color: remainingStr == "Month End Closed" ? Colors.redAccent : Colors.white54,
+                                color: (remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode") ? Colors.redAccent : Colors.white54,
                                 fontSize: 11,
-                                fontWeight: remainingStr == "Month End Closed" ? FontWeight.bold : FontWeight.normal,
+                                fontWeight: (remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode") ? FontWeight.bold : FontWeight.normal,
                               ),
                             ),
                             trailing: Container(
@@ -1002,7 +1138,9 @@ class _GameMarketsListScreenState extends State<GameMarketsListScreen> {
                         Text("${market.hindiName} (${market.name})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFF59E0B))),
                         const SizedBox(height: 4),
                         Text(
-                          timeLeft == "Month End Closed" ? "महीना बंद (Month End Closed)" : "Band hone me: $timeLeft",
+                          timeLeft == "Month End Closed"
+                              ? "महीना बंद (Month End Closed)"
+                              : (timeLeft == "Maintenance Mode" ? "सिस्टम मेंटेनेंस" : "Band hone me: $timeLeft"),
                           style: TextStyle(color: isOpen ? Colors.greenAccent : Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                         Text("Close Time: ${market.closeTimeStr}", style: const TextStyle(color: Colors.white54, fontSize: 11)),
@@ -1145,7 +1283,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
           content: Text(
             isMonthEndToday()
                 ? "महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं। आज कोई बिड नहीं लग सकती।"
-                : "इस बाज़ार का समय समाप्त हो चुका है।",
+                : (dynamicEmergencyLock ? "सिस्टम मेंटेनेंस की वजह से गेम बंद है।" : "इस बाज़ार का समय समाप्त हो चुका है।"),
             style: const TextStyle(color: Colors.white70),
           ),
           actions: [
@@ -1343,7 +1481,7 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
           content: Text(
             isMonthEndToday()
                 ? "महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं। आज कोई बिड नहीं लग सकती।"
-                : "इस बाज़ार का समय समाप्त हो चुका है।",
+                : (dynamicEmergencyLock ? "सिस्टम मेंटेनेंस की वजह से गेम बंद है।" : "इस बाज़ार का समय समाप्त हो चुका है।"),
             style: const TextStyle(color: Colors.white70),
           ),
           actions: [
@@ -1492,7 +1630,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   final _set1Controller = TextEditingController();
   final _set2Controller = TextEditingController();
   final _amountController = TextEditingController();
-  
+
   List<String> generatedJodis = [];
   int totalJodisCount = 0;
   int calculatedTotalAmount = 0;
@@ -1537,7 +1675,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
           content: Text(
             isMonthEndToday()
                 ? "महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं। आज कोई बिड नहीं लग सकती।"
-                : "इस बाज़ार का समय समाप्त हो चुका है।",
+                : (dynamicEmergencyLock ? "सिस्टम मेंटेनेंस की वजह से गेम बंद है।" : "इस बाज़ार का समय समाप्त हो चुका है।"),
             style: const TextStyle(color: Colors.white70),
           ),
           actions: [
@@ -1931,7 +2069,7 @@ class WalletScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 14. ADD MONEY SCREEN -----------------
+// ----------------- 14. ADD MONEY SCREEN (DYNAMIC UPI & QR CODE) -----------------
 class AddMoneyPaymentScreen extends StatefulWidget {
   @override
   _AddMoneyPaymentScreenState createState() => _AddMoneyPaymentScreenState();
@@ -1940,7 +2078,6 @@ class AddMoneyPaymentScreen extends StatefulWidget {
 class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   final _amount = TextEditingController();
   final _utr = TextEditingController();
-  final String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay%3Fpa=9761630128@ybl%26pn=DisawarKing%26cu=INR";
   bool _isSaving = false;
 
   void _submitDeposit() async {
@@ -1974,13 +2111,18 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Dynamic QR URL based on live admin UPI ID
+    final String dynamicQrUrl = "[https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay%3Fpa=$](https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay%3Fpa=$){Uri.encodeComponent(dynamicUpiId)}%26pn=DisawarKing%26cu=INR";
+
     return Scaffold(
       appBar: AppBar(title: const Text("Add Money (Deposit)")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Image.network(qrCodeUrl, height: 200, width: 200),
+            Image.network(dynamicQrUrl, height: 200, width: 200),
+            const SizedBox(height: 8),
+            Text("UPI ID: $dynamicUpiId", style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 16),
             TextField(controller: _amount, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Amount (Min ₹50)", border: OutlineInputBorder())),
             const SizedBox(height: 12),
@@ -2268,7 +2410,7 @@ class MoreMenuScreen extends StatelessWidget {
               child: ListTile(
                 leading: const Icon(Icons.admin_panel_settings, color: Colors.amber, size: 30),
                 title: const Text("MASTER ADMIN PANEL", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
-                subtitle: const Text("Result Ghoshan, Bets, Deposits & Withdrawals", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                subtitle: const Text("Result Ghoshan, Bets, Deposits, Remote Settings", style: TextStyle(color: Colors.white70, fontSize: 12)),
                 trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => MasterAdminPanelScreen())),
               ),
@@ -2342,7 +2484,7 @@ class ReferAndEarnScreen extends StatelessWidget {
                       icon: const Icon(Icons.share, color: Colors.white),
                       label: const Text("SHARE ON WHATSAPP", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       onPressed: () {
-                        String shareMsg = "Disawar King App download karein aur khelein! Register karte waqt mera Referral Code dalein: $currentLoggedInUserMobile\nDownload App: https://disawarking.app";
+                        String shareMsg = "Disawar King App download karein aur khelein! Register karte waqt mera Referral Code dalein: $currentLoggedInUserMobile\nDownload App: [https://disawarking.app](https://disawarking.app)";
                         openWhatsAppChat(message: shareMsg);
                       },
                     ),
@@ -2357,7 +2499,7 @@ class ReferAndEarnScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 17. MASTER ADMIN PANEL (DATE-SMART DECLARE & INSTANT OVERRIDE) -----------------
+// ----------------- 17. MASTER ADMIN PANEL (WITH REMOTE LIVE SETTINGS TAB) -----------------
 class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
@@ -2367,10 +2509,40 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
   late TabController _tabController;
   bool _isImporting = false;
 
+  // Settings Controllers
+  final _whatsappCtrl = TextEditingController(text: dynamicWhatsAppNumber);
+  final _upiCtrl = TextEditingController(text: dynamicUpiId);
+  final _noticeCtrl = TextEditingController(text: dynamicNoticeText);
+  final _apkUrlCtrl = TextEditingController(text: dynamicLatestApkUrl);
+  bool _emergencyLock = dynamicEmergencyLock;
+  bool _isSavingSettings = false;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
+  }
+
+  void _saveRemoteSettings() async {
+    setState(() => _isSavingSettings = true);
+    try {
+      await FirebaseFirestore.instance.collection('app_settings').doc('config').set({
+        'whatsapp': _whatsappCtrl.text.trim(),
+        'upi': _upiCtrl.text.trim(),
+        'notice': _noticeCtrl.text.trim(),
+        'emergencyLock': _emergencyLock,
+        'apkUrl': _apkUrlCtrl.text.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(backgroundColor: Colors.green, content: Text("Settings Live Update Ho Gayi! Sabhi users ko turant dikhega.")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
+    } finally {
+      if (mounted) setState(() => _isSavingSettings = false);
+    }
   }
 
   void _importPastChartData() async {
@@ -2495,7 +2667,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
 
               try {
                 await FirebaseFirestore.instance.collection('results_history').doc("${dt}_$marketName").delete();
-                
+
                 var liveDoc = await FirebaseFirestore.instance.collection('results').doc(marketName).get();
                 if (liveDoc.exists && liveDoc.data()?['date'] == dt) {
                   await FirebaseFirestore.instance.collection('results').doc(marketName).set({
@@ -2609,7 +2781,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                       var firestore = FirebaseFirestore.instance;
 
                       try {
-                        // 1. INSTANT LIVE RESULT & CHART UPDATE
                         await firestore.collection('results').doc(marketName).set({
                           'number': result,
                           'date': chosenDate,
@@ -2624,7 +2795,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           'timestamp': FieldValue.serverTimestamp(),
                         });
 
-                        // 2. FETCH BETS FOR ROLLBACK & PAYOUT
                         var marketBets = await firestore
                             .collection('bets')
                             .where('market', isEqualTo: marketName)
@@ -2671,7 +2841,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           }
                         }
 
-                        // 3. NAYE RESULT KE MUTABIQ DISTRIBUTE KAREIN
                         String andarDigit = result.substring(0, 1);
                         String baharDigit = result.substring(1, 2);
 
@@ -2812,6 +2981,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
             Tab(text: "Live Bets"),
             Tab(text: "Deposits"),
             Tab(text: "Withdrawals"),
+            Tab(text: "Settings"),
           ],
         ),
       ),
