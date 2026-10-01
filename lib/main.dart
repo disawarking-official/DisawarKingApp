@@ -88,7 +88,6 @@ Map<String, Map<String, dynamic>> dynamicMarketTimings = {
   "DISAWAR": {"closeHour": 4, "closeMin": 0, "closeTimeStr": "04:00 AM", "resultTimeStr": "05:00 AM"},
 };
 
-// Helper: 12-hour string (09:05 AM/PM) ko ghante aur minute me convert karta hai
 Map<String, int> parseTimeString(String timeStr) {
   try {
     String clean = timeStr.trim().toUpperCase();
@@ -242,7 +241,6 @@ Widget buildAppLogo() {
   );
 }
 
-// ----------------- WALLET BALANCE PARSER (AUTO-FALLBACK) -----------------
 Map<String, double> extractUserBalances(Map<String, dynamic>? data) {
   if (data == null) return {'deposit': 0.0, 'winning': 0.0, 'total': 0.0};
 
@@ -255,7 +253,6 @@ Map<String, double> extractUserBalances(Map<String, dynamic>? data) {
   if (data.containsKey('winningBalance')) {
     win = ((data['winningBalance'] ?? 0) as num).toDouble();
   } else if (data.containsKey('balance')) {
-    // Purana legacy single field
     win = ((data['balance'] ?? 0) as num).toDouble();
   } else if (data.containsKey('wallet')) {
     win = ((data['wallet'] ?? 0) as num).toDouble();
@@ -791,7 +788,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   }
 }
 
-// ----------------- SIDE DRAWER COMPONENT (TOP-LEFT PROFILE AVATAR CLICK) -----------------
+// ----------------- SIDE DRAWER COMPONENT -----------------
 class AppSideNavigationDrawer extends StatelessWidget {
   void _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -909,7 +906,7 @@ class AppSideNavigationDrawer extends StatelessWidget {
   }
 }
 
-// ----------------- 4. MAIN BOTTOM NAVIGATION (CLEAN 4 BOTTOM TABS + LEFT DRAWER) -----------------
+// ----------------- 4. MAIN BOTTOM NAVIGATION -----------------
 class MainNavigationScreen extends StatefulWidget {
   @override
   _MainNavigationScreenState createState() => _MainNavigationScreenState();
@@ -1018,7 +1015,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ----------------- 5. HOME SCREEN (TOP LEFT PROFILE AVATAR OPENS DRAWER) -----------------
+// ----------------- 5. HOME SCREEN -----------------
 class HomeLiveResultsScreen extends StatefulWidget {
   @override
   _HomeLiveResultsScreenState createState() => _HomeLiveResultsScreenState();
@@ -1456,7 +1453,6 @@ Future<bool> deductGamePoints(String mobile, double points) async {
   var d = snap.data()!;
   var bal = extractUserBalances(d);
   double dep = bal['deposit']!;
-  double win = bal['winning']!;
   double total = bal['total']!;
 
   if (points > total) return false;
@@ -2056,7 +2052,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   }
 }
 
-// ----------------- 11. MONTH-WISE ALL-IN-ONE MASTER CHART SCREEN -----------------
+// ----------------- 11. MONTH-WISE MASTER CHART SCREEN -----------------
 class CombinedAllMarketsChartScreen extends StatefulWidget {
   @override
   _CombinedAllMarketsChartScreenState createState() => _CombinedAllMarketsChartScreenState();
@@ -2926,7 +2922,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
               String curMonthYear = "${now.month.toString().padLeft(2, '0')}-${now.year}";
 
               try {
-                // Purane aur naye dono key patterns ko check karke delete karo
                 await FirebaseFirestore.instance.collection('results_history').doc("${curMonthYear}_${dt}_$marketName").delete();
                 await FirebaseFirestore.instance.collection('results_history').doc("${dt}_$marketName").delete();
 
@@ -3052,7 +3047,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           'wasCorrected': isReDeclaration,
                         });
 
-                        // Unique month-wise separation key
                         await firestore.collection('results_history').doc("${curMonthYear}_${chosenDate}_$marketName").set({
                           'market': marketName,
                           'number': result,
@@ -3504,7 +3498,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
             },
           ),
 
-          // TAB 5: REMOTE SETTINGS (LIVE TIMINGS WITH AUTO-PARSE)
+          // TAB 5: REMOTE SETTINGS
           ListView(
             padding: const EdgeInsets.all(14),
             children: [
@@ -3674,14 +3668,15 @@ class MyPlayGameScreen extends StatelessWidget {
                       )
                     ],
                   ),
-                );
-              },
-            );
-          },
-        ),
-      );
-    }
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
   }
+}
 
 // ----------------- 18. WITHDRAWAL LIST SCREEN -----------------
 class WithdrawalListScreen extends StatelessWidget {
