@@ -2802,41 +2802,59 @@ class MasterAdminPanelScreen extends StatefulWidget {
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
 }
 
-// ----------------- ADMIN PANEL CSV IMPORT DIALOG -----------------
+// ----------------- ADMIN PANEL ENTIRE CSV AUTO-IMPORTER -----------------
 class AdminCsvImportDialog extends StatefulWidget {
   @override
   _AdminCsvImportDialogState createState() => _AdminCsvImportDialogState();
 }
 
 class _AdminCsvImportDialogState extends State<AdminCsvImportDialog> {
-  final TextEditingController _monthController = TextEditingController(text: "09-2026");
   final TextEditingController _csvController = TextEditingController();
   bool _isUploading = false;
   String _statusMsg = "";
 
-  void _uploadCsvData() async {
-    String mYear = _monthController.text.trim();
+  void _uploadEntireCsvData() async {
     String rawCsv = _csvController.text.trim();
 
-    if (mYear.isEmpty || rawCsv.isEmpty) {
-      setState(() => _statusMsg = "Month aur CSV dono bharna zaroori hai!");
+    if (rawCsv.isEmpty) {
+      setState(() => _statusMsg = "Pehle CSV ka data yahan Paste karein!");
       return;
     }
 
     setState(() {
       _isUploading = true;
-      _statusMsg = "Data upload ho raha hai...";
+      _statusMsg = "Poori CSV read karke database me save ho rahi hai...";
     });
 
     try {
+      final monthMap = {
+        'Jan-25': '01-2025', 'Feb-25': '02-2025', 'Mar-25': '03-2025', 'Apr-25': '04-2025',
+        'May-25': '05-2025', 'Jun-25': '06-2025', 'Jul-25': '07-2025', 'Aug-25': '08-2025',
+        'Sep-25': '09-2025', 'Oct-25': '10-2025', 'Nov-25': '11-2025', 'Dec-25': '12-2025',
+        'Jan-26': '01-2026', 'Feb-26': '02-2026', 'Mar-26': '03-2026', 'Apr-26': '04-2026',
+        'May-26': '05-2026', 'Jun-26': '06-2026', 'Jul-26': '07-2026', 'Aug-26': '08-2026',
+        'Sep-26': '09-2026'
+      };
+
       final lines = rawCsv.split("\n");
-      final batch = FirebaseFirestore.instance.batch();
-      int count = 0;
+      final historyCol = FirebaseFirestore.instance.collection('results_history');
+      
+      WriteBatch batch = FirebaseFirestore.instance.batch();
+      int batchCount = 0;
+      int totalEntries = 0;
+      String currentMonthKey = "";
 
       for (var line in lines) {
-        var parts = line.trim().split(",");
-        // CSV Format: Dt, DS, DL, SG, FB, GD, GL
-        if (parts.length >= 7 && int.tryParse(parts[0].trim()) != null) {
+        line = line.trim();
+        if (line.isEmpty) continue;
+        var parts = line.split(",");
+
+        // Check Month Header (e.g. Feb-25,DS,DL,SG,FB,GD,GL)
+        if (parts.length >= 7 && monthMap.containsKey(parts[0].trim())) {
+          currentMonthKey = monthMap[parts[0].trim()]!;
+        } 
+        // Row with Date and numbers
+        else if (currentMonthKey.isNotEmpty && parts.length >= 7 && int.tryParse(parts[0].trim()) != null) {
           String date = parts[0].trim().padLeft(2, '0');
           String ds = parts[1].trim();
           String dl = parts[2].trim();
@@ -2845,7 +2863,6 @@ class _AdminCsvImportDialogState extends State<AdminCsvImportDialog> {
           String gd = parts[5].trim();
           String gl = parts[6].trim();
 
-          // Sahi sequence
           Map<String, String> markets = {
             "DELHI BAZAR": dl,
             "SHREE GANESH": sg,
@@ -2856,24 +2873,35 @@ class _AdminCsvImportDialogState extends State<AdminCsvImportDialog> {
           };
 
           markets.forEach((marketName, resultNum) {
-            String docId = "${mYear}_${date}_$marketName";
-            var docRef = FirebaseFirestore.instance.collection('results_history').doc(docId);
+            String docId = "${currentMonthKey}_${date}_$marketName";
+            var docRef = historyCol.doc(docId);
             batch.set(docRef, {
               'date': date,
-              'monthYear': mYear,
+              'monthYear': currentMonthKey,
               'market': marketName,
               'number': resultNum.isEmpty ? '--' : resultNum,
               'timestamp': FieldValue.serverTimestamp(),
             });
-            count++;
+            batchCount++;
+            totalEntries++;
           });
+
+          // Firestore batch limit is 500
+          if (batchCount >= 400) {
+            await batch.commit();
+            batch = FirebaseFirestore.instance.batch();
+            batchCount = 0;
+          }
         }
       }
 
-      await batch.commit();
+      if (batchCount > 0) {
+        await batch.commit();
+      }
+
       setState(() {
         _isUploading = false;
-        _statusMsg = "Kamyab! $mYear ke $count results database me save ho gaye.";
+        _statusMsg = "Safal! Poore 21 mahino ke $totalEntries results chart me upload ho gaye!";
       });
     } catch (e) {
       setState(() {
@@ -2887,32 +2915,23 @@ class _AdminCsvImportDialogState extends State<AdminCsvImportDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: const Color(0xFF131B2E),
-      title: const Text("Upload Month CSV", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+      title: const Text("Import Full 2-Years CSV", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Month-Year (e.g. 09-2026, 08-2026, 01-2025):", style: TextStyle(color: Colors.white70, fontSize: 12)),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _monthController,
-              style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFF090D16),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
+            const Text(
+              "Poori record.csv file ka text ek sath yahan Paste karein (Jan 2025 se Sep 2026 tak sab auto-detect ho jayega):",
+              style: TextStyle(color: Colors.white70, fontSize: 12),
             ),
-            const SizedBox(height: 12),
-            const Text("CSV Data Paste Karein:\nFormat: Dt,DS,DL,SG,FB,GD,GL", style: TextStyle(color: Colors.white70, fontSize: 12)),
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
             TextField(
               controller: _csvController,
-              maxLines: 7,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
+              maxLines: 9,
+              style: const TextStyle(color: Colors.white, fontSize: 11),
               decoration: InputDecoration(
-                hintText: "1,XX,58,89,45,86,81\n2,69,52,54,19,85,96...",
+                hintText: "Feb-25,DS,DL,SG,FB,GD,GL\n1,XX,22,99,76,39,52\n...\nSep-26,DS,DL,SG,FB,GD,GL\n...",
                 hintStyle: const TextStyle(color: Colors.white24),
                 filled: true,
                 fillColor: const Color(0xFF090D16),
@@ -2935,14 +2954,14 @@ class _AdminCsvImportDialogState extends State<AdminCsvImportDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+          child: const Text("Band Karein", style: TextStyle(color: Colors.white60)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-          onPressed: _isUploading ? null : _uploadCsvData,
+          onPressed: _isUploading ? null : _uploadEntireCsvData,
           child: _isUploading
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-              : const Text("Save To Database", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              : const Text("UPLOAD ALL MONTHS", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         ),
       ],
     );
