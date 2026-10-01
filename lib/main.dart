@@ -992,7 +992,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ----------------- 5. HOME SCREEN (ATTRACTIVE VIP THEME - TIME LEFT REMOVED) -----------------
+// ----------------- 5. HOME SCREEN -----------------
 class HomeLiveResultsScreen extends StatefulWidget {
   final VoidCallback onOpenDrawer;
   HomeLiveResultsScreen({required this.onOpenDrawer});
@@ -2126,7 +2126,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   }
 }
 
-// ----------------- 11. CALENDAR TABLE (FULL 1 TO 31 DAYS) -----------------
+// ----------------- 11. CALENDAR TABLE (LATEST 3 MONTHS + OLD CHART WEB BUTTON) -----------------
 class CombinedAllMarketsChartScreen extends StatefulWidget {
   @override
   _CombinedAllMarketsChartScreenState createState() => _CombinedAllMarketsChartScreenState();
@@ -2142,22 +2142,53 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
     selectedMonthYear = "${now.month.toString().padLeft(2, '0')}-${now.year}";
   }
 
+  void _openOldChartWebsite() async {
+    final Uri url = Uri.parse("https://disawarking-official.github.io/DisawarkingApp/chart.html");
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     DateTime now = DateTime.now();
+
+    // Rolling 3 Months Filter: Sirf Current Month aur pichhle 2 mahine
     List<String> monthOptions = [];
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 3; i++) {
       DateTime prev = DateTime(now.year, now.month - i, 1);
       monthOptions.add("${prev.month.toString().padLeft(2, '0')}-${prev.year}");
+    }
+
+    if (!monthOptions.contains(selectedMonthYear)) {
+      selectedMonthYear = monthOptions.first;
     }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("DisawarKing Calendar"),
         actions: [
+          // Professional OLD CHART Button
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF59E0B),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.history, color: Color(0xFF0F172A), size: 16),
+              label: const Text(
+                "OLD CHART",
+                style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 11),
+              ),
+              onPressed: _openOldChartWebsite,
+            ),
+          ),
+          // Month Dropdown (Latest 3 Months)
           Container(
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
               color: const Color(0xFF090D16),
               borderRadius: BorderRadius.circular(8),
@@ -2168,7 +2199,7 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
                 dropdownColor: const Color(0xFF131B2E),
                 value: selectedMonthYear,
                 style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12),
-                icon: const Icon(Icons.calendar_month, color: Colors.amber, size: 18),
+                icon: const Icon(Icons.calendar_month, color: Colors.amber, size: 16),
                 items: monthOptions.map((String m) {
                   return DropdownMenuItem<String>(
                     value: m,
@@ -2180,7 +2211,8 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
                 },
               ),
             ),
-          )
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -2949,7 +2981,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
     return now.day.toString().padLeft(2, '0');
   }
 
-  // Safe Month-Wise Delete Function: Purane mahine ka data nahi udega!
   void _clearWrongDateResult(BuildContext context, String marketName) {
     DateTime now = DateTime.now();
     String deleteMonthYear = "${now.month.toString().padLeft(2, '0')}-${now.year}";
@@ -2999,10 +3030,8 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                 Navigator.pop(ctx);
 
                 try {
-                  // Specific Month-Wise Document Delete
                   await FirebaseFirestore.instance.collection('results_history').doc("${deleteMonthYear}_${dt}_$marketName").delete();
 
-                  // Live result tabhi hategi agar wo current date aur month ka ho
                   var liveDoc = await FirebaseFirestore.instance.collection('results').doc(marketName).get();
                   if (liveDoc.exists && liveDoc.data()?['date'] == dt) {
                     await FirebaseFirestore.instance.collection('results').doc(marketName).set({
@@ -3055,7 +3084,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(color: Colors.red.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.redAccent)),
                       child: Text(
-                        "⚠️ Is Market ka pehle se '$existingResult' khula hai.\n\nNaya number save karne par purana galat balance wapas katega aur naye winners ko rashi mil jayegi.",
+                        "⚠️️ Is Market ka pehle se '$existingResult' khula hai.\n\nNaya number save karne par purana galat balance wapas katega aur naye winners ko rashi mil jayegi.",
                         style: const TextStyle(color: Colors.white, fontSize: 12),
                       ),
                     ),
@@ -3536,20 +3565,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Text("User: $name (Mobile: $mob)", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                          const SizedBox(height: 4),
-                          Text("Mode: $method", style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-                          const SizedBox(height: 4),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: const Color(0xFF090D16), borderRadius: BorderRadius.circular(6)),
-                            child: Text(
-                              accountDetails,
-                              style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -3690,7 +3705,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
   }
 }
 
-// ----------------- 17. MY PLAYED GAME SCREEN (CHRONOLOGICAL DATE SORTING) -----------------
+// ----------------- 17. MY PLAYED GAME SCREEN -----------------
 class MyPlayGameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -3711,7 +3726,6 @@ class MyPlayGameScreen extends StatelessWidget {
 
           var docs = snapshot.data!.docs;
 
-          // Pure chronological sorting: Nayi lagayi hui bet (jaise 2nd tareekh) sabse upar dikhegi, 1st tareekh wali neeche chali jayegi
           List<QueryDocumentSnapshot> sortedDocs = List.from(docs);
           sortedDocs.sort((a, b) {
             var dataA = a.data() as Map<String, dynamic>;
@@ -3721,7 +3735,7 @@ class MyPlayGameScreen extends StatelessWidget {
             Timestamp? timeB = dataB['timestamp'] as Timestamp?;
 
             if (timeA != null && timeB != null) {
-              return timeB.compareTo(timeA); // Descending order (Latest First)
+              return timeB.compareTo(timeA);
             }
             return 0;
           });
