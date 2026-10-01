@@ -61,6 +61,13 @@ class DisawarKingApp extends StatelessWidget {
 String currentLoggedInUserMobile = "";
 String currentLoggedInUserName = "";
 
+// STRICT ADMIN NUMBERS (Only these two numbers can see Admin Panel)
+final List<String> authorizedAdmins = ["9761630128", "7409989270"];
+
+bool get isCurrentUserAdmin {
+  return authorizedAdmins.contains(currentLoggedInUserMobile.trim());
+}
+
 String dynamicWhatsAppNumber = "917409989270";
 String dynamicUpiId = "9761630128@ybl";
 String dynamicNoticeText = "";
@@ -787,7 +794,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   }
 }
 
-// ----------------- SIDE DRAWER COMPONENT (HAR USER KO ADMIN BUTTON DIKHEGA) -----------------
+// ----------------- SIDE DRAWER COMPONENT (ONLY ADMINS GET ADMIN BUTTON) -----------------
 class AppSideNavigationDrawer extends StatelessWidget {
   void _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -824,24 +831,26 @@ class AppSideNavigationDrawer extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.amber, width: 2),
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.amber.withOpacity(0.15),
+                // STRICT SECURITY: Button ONLY for 9761630128 and 7409989270
+                if (isCurrentUserAdmin)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.amber, width: 2),
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.amber.withOpacity(0.15),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.admin_panel_settings, color: Colors.amber, size: 30),
+                      title: const Text("MASTER ADMIN PANEL", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text("Results, Bets, Timings Control", style: TextStyle(color: Colors.white60, fontSize: 11)),
+                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber, size: 14),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (c) => MasterAdminPanelScreen()));
+                      },
+                    ),
                   ),
-                  child: ListTile(
-                    leading: const Icon(Icons.admin_panel_settings, color: Colors.amber, size: 30),
-                    title: const Text("MASTER ADMIN PANEL", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: const Text("Results, Bets, Timings Control", style: TextStyle(color: Colors.white60, fontSize: 11)),
-                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber, size: 14),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (c) => MasterAdminPanelScreen()));
-                    },
-                  ),
-                ),
                 ListTile(
                   leading: const Icon(Icons.share, color: Color(0xFFF59E0B)),
                   title: const Text("Refer & Earn (7% Commission)"),
@@ -986,7 +995,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ----------------- 5. HOME SCREEN (TOP LEFT PHOTO / 3-DOTS OPENS MENU) -----------------
+// ----------------- 5. HOME SCREEN (ONLY TODAY'S RESULT SHOWN - ELSE WAITING...) -----------------
 class HomeLiveResultsScreen extends StatefulWidget {
   final VoidCallback onOpenDrawer;
   HomeLiveResultsScreen({required this.onOpenDrawer});
@@ -1015,6 +1024,8 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
   @override
   Widget build(BuildContext context) {
     bool isMonthEnd = isMonthEndToday();
+    DateTime now = DateTime.now();
+    String todayDateStr = now.day.toString().padLeft(2, '0');
 
     return SafeArea(
       child: Column(
@@ -1104,10 +1115,11 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance.collection('results').snapshots(),
               builder: (context, snapshot) {
-                Map<String, String> liveResults = {};
+                Map<String, Map<String, dynamic>> liveResults = {};
                 if (snapshot.hasData) {
                   for (var doc in snapshot.data!.docs) {
-                    liveResults[doc.id] = doc['number']?.toString() ?? "--";
+                    var data = doc.data() as Map<String, dynamic>;
+                    liveResults[doc.id] = data;
                   }
                 }
 
@@ -1206,7 +1218,17 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                     const Text("Aaj Ka Live Result", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white70)),
                     const SizedBox(height: 8),
                     ...appMarkets.map((market) {
-                      String resultNum = liveResults[market.name] ?? "XX";
+                      var docData = liveResults[market.name];
+                      String savedDate = docData?['date']?.toString() ?? "";
+                      String savedNum = docData?['number']?.toString() ?? "";
+
+                      // Check: Sirf tab dikhega agar aaj ki date me declare hua ho!
+                      String displayNum = "Wait...";
+                      bool isDeclaredToday = (savedDate == todayDateStr && savedNum.isNotEmpty && savedNum != "XX");
+                      if (isDeclaredToday) {
+                        displayNum = savedNum;
+                      }
+
                       String remainingStr = market.getRemainingTimeStr();
 
                       return Card(
@@ -1228,10 +1250,17 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF59E0B),
+                              color: isDeclaredToday ? const Color(0xFFF59E0B) : Colors.white10,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Text(resultNum, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                            child: Text(
+                              displayNum,
+                              style: TextStyle(
+                                fontSize: isDeclaredToday ? 18 : 13,
+                                fontWeight: FontWeight.bold,
+                                color: isDeclaredToday ? const Color(0xFF0F172A) : Colors.white60,
+                              ),
+                            ),
                           ),
                         ),
                       );
@@ -2019,7 +2048,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   }
 }
 
-// ----------------- 11. MONTH-WISE ALL-IN-ONE MASTER CHART SCREEN -----------------
+// ----------------- 11. CALENDAR TABLE (COMPLETE 1 TO 31 DAYS FORMAT) -----------------
 class CombinedAllMarketsChartScreen extends StatefulWidget {
   @override
   _CombinedAllMarketsChartScreenState createState() => _CombinedAllMarketsChartScreenState();
@@ -2032,7 +2061,6 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
   void initState() {
     super.initState();
     DateTime now = DateTime.now();
-    // Default current month (10-2026) select hoga
     selectedMonthYear = "${now.month.toString().padLeft(2, '0')}-${now.year}";
   }
 
@@ -2084,7 +2112,6 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
             return const Center(child: CircularProgressIndicator(color: Colors.amber));
           }
 
-          List<String> dates = [];
           Map<String, Map<String, String>> chartMap = {};
 
           if (snapshot.hasData) {
@@ -2092,23 +2119,14 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
               var data = doc.data() as Map<String, dynamic>;
               String dt = data['date'] ?? '';
               String market = data['market'] ?? '';
-              String number = data['number'] ?? 'XX';
+              String number = data['number'] ?? '--';
               String monthYear = data['monthYear'] ?? "";
 
-              // Agar doc me monthYear missing hai toh purana September (09-2026) data maano
               if (monthYear.isEmpty) {
                 monthYear = "09-2026";
               }
 
-              // Sirf selected month ka hi data dikhega
-              if (monthYear != selectedMonthYear) {
-                continue;
-              }
-
-              if (dt.isNotEmpty) {
-                if (!dates.contains(dt)) {
-                  dates.add(dt);
-                }
+              if (monthYear == selectedMonthYear && dt.isNotEmpty) {
                 if (!chartMap.containsKey(dt)) {
                   chartMap[dt] = {};
                 }
@@ -2117,28 +2135,8 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
             }
           }
 
-          dates.sort((a, b) {
-            int numA = int.tryParse(a) ?? 0;
-            int numB = int.tryParse(b) ?? 0;
-            return numA.compareTo(numB);
-          });
-
-          if (dates.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.event_note, color: Colors.white24, size: 55),
-                  const SizedBox(height: 10),
-                  Text("Month $selectedMonthYear ka Chart Abhi Khali Hai.", style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 6),
-                  const Text("Jaise hi naya result declare hoga, wo yahan tarikh-wise show hoga.", style: TextStyle(color: Colors.white54, fontSize: 12), textAlign: TextAlign.center),
-                  const SizedBox(height: 14),
-                  const Text("(Pichhla September ka record dekhne ke liye upar month dropdown badlein)", style: TextStyle(color: Colors.white38, fontSize: 11)),
-                ],
-              ),
-            );
-          }
+          // Full 31 Days Calendar Format Structure (Always Visible!)
+          List<String> all31Dates = List.generate(31, (index) => (index + 1).toString().padLeft(2, '0'));
 
           return SingleChildScrollView(
             scrollDirection: Axis.vertical,
@@ -2160,7 +2158,7 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
                         label: Text(m.name, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12)),
                       )),
                 ],
-                rows: dates.map((d) {
+                rows: all31Dates.map((d) {
                   return DataRow(
                     cells: [
                       DataCell(Text(d, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
@@ -3038,7 +3036,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           'wasCorrected': isReDeclaration,
                         });
 
-                        // Naya Month-Wise Record (01-10-2026)
                         await firestore.collection('results_history').doc("${curMonthYear}_${chosenDate}_$marketName").set({
                           'market': marketName,
                           'number': result,
