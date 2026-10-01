@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DisawarKing - Old Result Chart Archive</title>
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
@@ -77,8 +76,7 @@
                     <th>DISAWAR</th>
                 </tr>
             </thead>
-            <tbody id="chartBody">
-            </tbody>
+            <tbody id="chartBody"></tbody>
         </table>
     </div>
 
@@ -86,9 +84,8 @@
         © 2026 DisawarKing. All rights reserved. 18+ Only.
     </div>
 
-    <script id="archive-script"></script>
-    <script>
-        // Firebase Setup for Live Sync
+    <script id="archive-script">
+        // Firebase Setup
         const firebaseConfig = {
             apiKey: "AIzaSyAF1_OH3Szs8--OcwxHA11Fsj5x-iGSPIA",
             appId: "1:1015457895217:android:09cb8d98e56cc50b359610",
@@ -100,21 +97,118 @@
 
         let liveFirestoreData = {};
 
-        // Realtime listener from mobile app
+        // Realtime Firestore Listener
         db.collection("results_history").onSnapshot((snapshot) => {
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                const mYear = data.monthYear || "10-2026";
-                const dt = data.date;
+                let mYear = data.monthYear || "";
+                
+                // Doc ID se monthYear nikaalna agar data me na ho
+                if (!mYear && doc.id.includes("_")) {
+                    const parts = doc.id.split("_");
+                    if (parts[0].includes("-")) {
+                        mYear = parts[0];
+                    }
+                }
+                
+                // September data default
+                if (!mYear) {
+                    mYear = "09-2026";
+                }
+
+                const dt = data.date ? data.date.toString().padStart(2, '0') : "";
                 const market = data.market;
                 const num = data.number;
 
-                if (!liveFirestoreData[mYear]) liveFirestoreData[mYear] = {};
-                if (!liveFirestoreData[mYear][dt]) liveFirestoreData[mYear][dt] = {};
-                liveFirestoreData[mYear][dt][market] = num;
+                if (dt && market && num) {
+                    if (!liveFirestoreData[mYear]) liveFirestoreData[mYear] = {};
+                    if (!liveFirestoreData[mYear][dt]) liveFirestoreData[mYear][dt] = {};
+                    liveFirestoreData[mYear][dt][market] = num;
+                }
             });
             renderChart();
         });
+
+        // Online 2-Year Master Archive Load Karein
+        let pastArchive = {};
+        fetch("record.csv")
+            .then(res => res.text())
+            .then(csvText => {
+                parseCsvToArchive(csvText);
+                renderChart();
+            })
+            .catch(() => {
+                renderChart();
+            });
+
+        function parseCsvToArchive(csv) {
+            const monthsOrder = [
+                "02-2025", "03-2025", "04-2025", "05-2025", "06-2025", "07-2025",
+                "08-2025", "09-2025", "10-2025", "11-2025", "12-2025", "01-2026",
+                "02-2026", "03-2026", "04-2026", "05-2026", "06-2026", "07-2026",
+                "08-2026", "09-2026"
+            ];
+            
+            // January 2025 Pre-fill
+            pastArchive["01-2025"] = {
+                "01": { "DISAWAR": "XX", "DELHI BAZAR": "92", "SHREE GANESH": "84", "FARIDABAD": "35", "GHAZIABAD": "44", "GALI": "47" },
+                "02": { "DISAWAR": "00", "DELHI BAZAR": "35", "SHREE GANESH": "08", "FARIDABAD": "70", "GHAZIABAD": "33", "GALI": "54" },
+                "03": { "DISAWAR": "04", "DELHI BAZAR": "22", "SHREE GANESH": "10", "FARIDABAD": "91", "GHAZIABAD": "76", "GALI": "62" },
+                "04": { "DISAWAR": "54", "DELHI BAZAR": "83", "SHREE GANESH": "06", "FARIDABAD": "84", "GHAZIABAD": "77", "GALI": "30" },
+                "05": { "DISAWAR": "76", "DELHI BAZAR": "29", "SHREE GANESH": "52", "FARIDABAD": "66", "GHAZIABAD": "80", "GALI": "94" },
+                "06": { "DISAWAR": "00", "DELHI BAZAR": "37", "SHREE GANESH": "56", "FARIDABAD": "27", "GHAZIABAD": "24", "GALI": "23" },
+                "07": { "DISAWAR": "83", "DELHI BAZAR": "89", "SHREE GANESH": "22", "FARIDABAD": "75", "GHAZIABAD": "44", "GALI": "84" },
+                "08": { "DISAWAR": "99", "DELHI BAZAR": "92", "SHREE GANESH": "95", "FARIDABAD": "43", "GHAZIABAD": "03", "GALI": "71" },
+                "09": { "DISAWAR": "73", "DELHI BAZAR": "58", "SHREE GANESH": "15", "FARIDABAD": "96", "GHAZIABAD": "26", "GALI": "68" },
+                "10": { "DISAWAR": "18", "DELHI BAZAR": "37", "SHREE GANESH": "92", "FARIDABAD": "99", "GHAZIABAD": "30", "GALI": "84" },
+                "11": { "DISAWAR": "84", "DELHI BAZAR": "91", "SHREE GANESH": "98", "FARIDABAD": "64", "GHAZIABAD": "19", "GALI": "31" },
+                "12": { "DISAWAR": "63", "DELHI BAZAR": "30", "SHREE GANESH": "22", "FARIDABAD": "45", "GHAZIABAD": "19", "GALI": "66" },
+                "13": { "DISAWAR": "40", "DELHI BAZAR": "99", "SHREE GANESH": "19", "FARIDABAD": "88", "GHAZIABAD": "39", "GALI": "75" },
+                "14": { "DISAWAR": "80", "DELHI BAZAR": "19", "SHREE GANESH": "48", "FARIDABAD": "42", "GHAZIABAD": "04", "GALI": "39" },
+                "15": { "DISAWAR": "03", "DELHI BAZAR": "63", "SHREE GANESH": "69", "FARIDABAD": "31", "GHAZIABAD": "06", "GALI": "98" },
+                "16": { "DISAWAR": "69", "DELHI BAZAR": "67", "SHREE GANESH": "20", "FARIDABAD": "48", "GHAZIABAD": "69", "GALI": "59" },
+                "17": { "DISAWAR": "80", "DELHI BAZAR": "76", "SHREE GANESH": "66", "FARIDABAD": "12", "GHAZIABAD": "41", "GALI": "80" },
+                "18": { "DISAWAR": "96", "DELHI BAZAR": "72", "SHREE GANESH": "01", "FARIDABAD": "43", "GHAZIABAD": "17", "GALI": "77" },
+                "19": { "DISAWAR": "61", "DELHI BAZAR": "34", "SHREE GANESH": "28", "FARIDABAD": "49", "GHAZIABAD": "34", "GALI": "22" },
+                "20": { "DISAWAR": "43", "DELHI BAZAR": "89", "SHREE GANESH": "15", "FARIDABAD": "02", "GHAZIABAD": "29", "GALI": "76" },
+                "21": { "DISAWAR": "61", "DELHI BAZAR": "07", "SHREE GANESH": "41", "FARIDABAD": "49", "GHAZIABAD": "67", "GALI": "46" },
+                "22": { "DISAWAR": "21", "DELHI BAZAR": "75", "SHREE GANESH": "02", "FARIDABAD": "46", "GHAZIABAD": "72", "GALI": "14" },
+                "23": { "DISAWAR": "60", "DELHI BAZAR": "21", "SHREE GANESH": "70", "FARIDABAD": "31", "GHAZIABAD": "37", "GALI": "39" },
+                "24": { "DISAWAR": "48", "DELHI BAZAR": "65", "SHREE GANESH": "06", "FARIDABAD": "38", "GHAZIABAD": "02", "GALI": "13" },
+                "25": { "DISAWAR": "70", "DELHI BAZAR": "20", "SHREE GANESH": "63", "FARIDABAD": "72", "GHAZIABAD": "43", "GALI": "42" },
+                "26": { "DISAWAR": "83", "DELHI BAZAR": "02", "SHREE GANESH": "02", "FARIDABAD": "60", "GHAZIABAD": "60", "GALI": "22" },
+                "27": { "DISAWAR": "97", "DELHI BAZAR": "72", "SHREE GANESH": "36", "FARIDABAD": "77", "GHAZIABAD": "99", "GALI": "17" },
+                "28": { "DISAWAR": "74", "DELHI BAZAR": "89", "SHREE GANESH": "21", "FARIDABAD": "68", "GHAZIABAD": "45", "GALI": "49" },
+                "29": { "DISAWAR": "34", "DELHI BAZAR": "83", "SHREE GANESH": "77", "FARIDABAD": "43", "GHAZIABAD": "85", "GALI": "66" },
+                "30": { "DISAWAR": "91", "DELHI BAZAR": "67", "SHREE GANESH": "71", "FARIDABAD": "04", "GHAZIABAD": "87", "GALI": "42" },
+                "31": { "DISAWAR": "85", "DELHI BAZAR": "XX", "SHREE GANESH": "XX", "FARIDABAD": "XX", "GHAZIABAD": "XX", "GALI": "XX" }
+            };
+
+            const lines = csv.split('\n');
+            let mIndex = -1;
+
+            lines.forEach(line => {
+                const parts = line.split(',');
+                if (line.includes("Dt,DS,DL,SG,FB,GD,GL")) {
+                    mIndex++;
+                } else if (mIndex >= 0 && mIndex < monthsOrder.length && parts.length >= 7) {
+                    const dNum = parseInt(parts[0].trim());
+                    if (!isNaN(dNum)) {
+                        const curMonth = monthsOrder[mIndex];
+                        if (!pastArchive[curMonth]) pastArchive[curMonth] = {};
+                        const dStr = dNum.toString().padStart(2, '0');
+                        pastArchive[curMonth][dStr] = {
+                            "DISAWAR": parts[1].trim().padStart(2, '0'),
+                            "DELHI BAZAR": parts[2].trim().padStart(2, '0'),
+                            "SHREE GANESH": parts[3].trim().padStart(2, '0'),
+                            "FARIDABAD": parts[4].trim().padStart(2, '0'),
+                            "GHAZIABAD": parts[5].trim().padStart(2, '0'),
+                            "GALI": parts[6].trim().padStart(2, '0')
+                        };
+                    }
+                }
+            });
+        }
 
         function renderChart() {
             const selectedMonth = document.getElementById("monthSelect").value;
@@ -132,26 +226,27 @@
 
                 markets.forEach(m => {
                     let num = "--";
+
+                    // 1. Live Firestore Check
                     if (liveFirestoreData[selectedMonth] && liveFirestoreData[selectedMonth][dayStr] && liveFirestoreData[selectedMonth][dayStr][m]) {
                         num = liveFirestoreData[selectedMonth][dayStr][m];
-                    } else if (window.pastArchive && window.pastArchive[selectedMonth] && window.pastArchive[selectedMonth][dayStr] && window.pastArchive[selectedMonth][dayStr][m]) {
-                        num = window.pastArchive[selectedMonth][dayStr][m];
+                    }
+                    // 2. 2-Year Archive Check
+                    else if (pastArchive[selectedMonth] && pastArchive[selectedMonth][dayStr] && pastArchive[selectedMonth][dayStr][m]) {
+                        num = pastArchive[selectedMonth][dayStr][m];
                     }
 
-                    const badgeClass = (num !== "--" && num !== "XX") ? "num-badge has-num" : "num-badge empty-num";
-                    cellsHtml += `<td><span class="${badgeClass}">${num}</span></td>`;
+                    const badgeClass = (num !== "--" && num !== "XX" && num !== "") ? "num-badge has-num" : "num-badge empty-num";
+                    const displayVal = (num === "" || num === undefined) ? "--" : num;
+                    cellsHtml += `<td><span class="${badgeClass}">${displayVal}</span></td>`;
                 });
 
                 row.innerHTML = dateCell + cellsHtml;
                 tbody.appendChild(row);
             }
         }
-    </script>
-    <script src="data.js"></script>
-    <script>
-        if (window.pastArchive) {
-            renderChart();
-        }
+
+        renderChart();
     </script>
 </body>
 </html>
