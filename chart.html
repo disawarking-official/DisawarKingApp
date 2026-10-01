@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DisawarKing - Master Chart Archive</title>
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
@@ -21,8 +20,8 @@
         
         .months-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 500px; margin: 0 auto 20px auto; }
         .month-card { background: #131B2E; border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 14px 10px; text-align: center; color: #F8FAFC; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .month-card:hover { background: rgba(245, 158, 11, 0.15); border-color: #F59E0B; }
-        .month-card.active { background: #F59E0B; color: #090D16; border-color: #F59E0B; }
+        .month-card:hover:not(.disabled) { background: rgba(245, 158, 11, 0.15); border-color: #F59E0B; }
+        .month-card.disabled { opacity: 0.35; cursor: not-allowed; border-color: rgba(255,255,255,0.1); color: #64748B; }
         
         .view-header { display: flex; justify-content: space-between; align-items: center; max-width: 700px; margin: 0 auto 12px auto; padding: 0 4px; }
         .view-title { color: #F59E0B; font-size: 16px; font-weight: bold; }
@@ -53,29 +52,13 @@
         </div>
     </div>
 
-    <!-- Year Selector -->
     <div class="year-selector">
         <button id="btn2026" class="year-btn active" onclick="setYear('2026')">Year-2026</button>
         <button id="btn2025" class="year-btn" onclick="setYear('2025')">Year-2025</button>
     </div>
 
-    <!-- 2 Column x 6 Row Months Grid -->
-    <div id="monthsGrid" class="months-grid">
-        <div class="month-card" onclick="openMonth('01', 'January')">January</div>
-        <div class="month-card" onclick="openMonth('02', 'February')">February</div>
-        <div class="month-card" onclick="openMonth('03', 'March')">March</div>
-        <div class="month-card" onclick="openMonth('04', 'April')">April</div>
-        <div class="month-card" onclick="openMonth('05', 'May')">May</div>
-        <div class="month-card" onclick="openMonth('06', 'June')">June</div>
-        <div class="month-card" onclick="openMonth('07', 'July')">July</div>
-        <div class="month-card" onclick="openMonth('08', 'August')">August</div>
-        <div class="month-card" onclick="openMonth('09', 'September')">September</div>
-        <div class="month-card" onclick="openMonth('10', 'October')">October</div>
-        <div class="month-card" onclick="openMonth('11', 'November')">November</div>
-        <div class="month-card" onclick="openMonth('12', 'December')">December</div>
-    </div>
+    <div id="monthsGrid" class="months-grid"></div>
 
-    <!-- Chart Table Container -->
     <div id="chartSection" style="display: none;">
         <div class="view-header">
             <span id="viewTitle" class="view-title">Chart</span>
@@ -103,9 +86,7 @@
         © 2026 DisawarKing. All rights reserved. 18+ Only.
     </div>
 
-    <script id="archive-script"></script>
     <script>
-        // Firebase Configuration for Live Sync
         const firebaseConfig = {
             apiKey: "AIzaSyAF1_OH3Szs8--OcwxHA11Fsj5x-iGSPIA",
             appId: "1:1015457895217:android:09cb8d98e56cc50b359610",
@@ -116,20 +97,35 @@
         const db = firebase.firestore();
 
         let liveFirestoreData = {};
+        let pastArchive = {};
         let currentYear = "2026";
         let activeMonthNum = null;
         let activeMonthName = "";
 
-        // Read record.csv automatically
-        let pastArchive = {};
+        const allMonths = [
+            { num: "01", name: "January" },
+            { num: "02", name: "February" },
+            { num: "03", name: "March" },
+            { num: "04", name: "April" },
+            { num: "05", name: "May" },
+            { num: "06", name: "June" },
+            { num: "07", name: "July" },
+            { num: "08", name: "August" },
+            { num: "09", name: "September" },
+            { num: "10", name: "October" },
+            { num: "11", name: "November" },
+            { num: "12", name: "December" }
+        ];
+
         fetch("record.csv")
             .then(res => res.text())
-            .then(csvText => {
-                parseCsvToArchive(csvText);
+            .then(csv => {
+                parseCsvData(csv);
+                if (activeMonthNum) renderChart(activeMonthNum, activeMonthName);
             })
             .catch(() => {});
 
-        function parseCsvToArchive(csv) {
+        function parseCsvData(csv) {
             const monthMap = {
                 'Jan-25': '01-2025', 'Feb-25': '02-2025', 'Mar-25': '03-2025', 'Apr-25': '04-2025',
                 'May-25': '05-2025', 'Jun-25': '06-2025', 'Jul-25': '07-2025', 'Aug-25': '08-2025',
@@ -140,21 +136,21 @@
             };
 
             const lines = csv.split('\n');
-            let curMonthKey = null;
+            let curMonth = null;
 
             lines.forEach(line => {
                 const parts = line.trim().split(',');
                 if (parts.length >= 7 && monthMap[parts[0]]) {
-                    curMonthKey = monthMap[parts[0]];
-                    if (!pastArchive[curMonthKey]) pastArchive[curMonthKey] = {};
-                } else if (curMonthKey && parts.length >= 7 && !isNaN(parseInt(parts[0]))) {
-                    const dStr = parseInt(parts[0]).toString().padStart(2, '0');
+                    curMonth = monthMap[parts[0]];
+                    if (!pastArchive[curMonth]) pastArchive[curMonth] = {};
+                } else if (curMonth && parts.length >= 7 && !isNaN(parseInt(parts[0]))) {
+                    const d = parseInt(parts[0]).toString().padStart(2, '0');
                     const clean = (v) => {
                         v = (v || '').trim();
                         if (v === '' || v === 'XX' || v === '--') return v || '--';
                         return (!isNaN(v) && v.length === 1) ? '0' + v : v;
                     };
-                    pastArchive[curMonthKey][dStr] = {
+                    pastArchive[curMonth][d] = {
                         "DISAWAR": clean(parts[1]),
                         "DELHI BAZAR": clean(parts[2]),
                         "SHREE GANESH": clean(parts[3]),
@@ -165,8 +161,7 @@
                 }
             });
 
-            // January 2025 Record Fill
-            const jan25 = {
+            pastArchive["01-2025"] = {
                 "01": {"DISAWAR": "XX", "DELHI BAZAR": "92", "SHREE GANESH": "84", "FARIDABAD": "35", "GHAZIABAD": "44", "GALI": "47"},
                 "02": {"DISAWAR": "00", "DELHI BAZAR": "35", "SHREE GANESH": "08", "FARIDABAD": "70", "GHAZIABAD": "33", "GALI": "54"},
                 "03": {"DISAWAR": "04", "DELHI BAZAR": "22", "SHREE GANESH": "10", "FARIDABAD": "91", "GHAZIABAD": "76", "GALI": "62"},
@@ -199,10 +194,28 @@
                 "30": {"DISAWAR": "91", "DELHI BAZAR": "67", "SHREE GANESH": "71", "FARIDABAD": "04", "GHAZIABAD": "87", "GALI": "42"},
                 "31": {"DISAWAR": "85", "DELHI BAZAR": "XX", "SHREE GANESH": "XX", "FARIDABAD": "XX", "GHAZIABAD": "XX", "GALI": "XX"}
             };
-            pastArchive["01-2025"] = jan25;
         }
 
-        // Realtime Firestore Listener
+        function renderMonthsGrid() {
+            const grid = document.getElementById("monthsGrid");
+            grid.innerHTML = "";
+            const maxMonthIn2026 = 10;
+
+            allMonths.forEach(m => {
+                const mInt = parseInt(m.num);
+                const isFuture = (currentYear === "2026" && mInt > maxMonthIn2026);
+
+                const card = document.createElement("div");
+                card.className = "month-card" + (isFuture ? " disabled" : "");
+                card.innerText = m.name + (isFuture ? " (Coming Soon)" : "");
+
+                if (!isFuture) {
+                    card.onclick = () => openMonth(m.num, m.name);
+                }
+                grid.appendChild(card);
+            });
+        }
+
         db.collection("results_history").onSnapshot((snapshot) => {
             snapshot.forEach((doc) => {
                 const data = doc.data();
@@ -224,9 +237,7 @@
                     liveFirestoreData[mYear][dt][market] = num;
                 }
             });
-            if (activeMonthNum) {
-                renderChart(activeMonthNum, activeMonthName);
-            }
+            if (activeMonthNum) renderChart(activeMonthNum, activeMonthName);
         });
 
         function setYear(year) {
@@ -234,6 +245,7 @@
             document.getElementById("btn2026").classList.toggle("active", year === "2026");
             document.getElementById("btn2025").classList.toggle("active", year === "2025");
             backToGrid();
+            renderMonthsGrid();
         }
 
         function backToGrid() {
@@ -283,6 +295,8 @@
                 tbody.appendChild(row);
             }
         }
+
+        renderMonthsGrid();
     </script>
 </body>
 </html>
