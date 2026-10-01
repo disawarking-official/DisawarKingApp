@@ -2126,31 +2126,28 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   }
 }
 
-// ----------------- 11. YEAR & 2-COLUMN x 6-ROW ARCHIVE CHART SCREEN -----------------
+// ----------------- 11. NORMAL CHART SCREEN (CURRENT MONTH + DROPDOWN) -----------------
 class CombinedAllMarketsChartScreen extends StatefulWidget {
   @override
   _CombinedAllMarketsChartScreenState createState() => _CombinedAllMarketsChartScreenState();
 }
 
 class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartScreen> {
-  String selectedYear = "2026";
-  String? selectedMonthNum;
-  String selectedMonthName = "";
+  String selectedMonthYear = "";
 
-  final List<Map<String, String>> monthsList = [
-    {"num": "01", "name": "January"},
-    {"num": "02", "name": "February"},
-    {"num": "03", "name": "March"},
-    {"num": "04", "name": "April"},
-    {"num": "05", "name": "May"},
-    {"num": "06", "name": "June"},
-    {"num": "07", "name": "July"},
-    {"num": "08", "name": "August"},
-    {"num": "09", "name": "September"},
-    {"num": "10", "name": "October"},
-    {"num": "11", "name": "November"},
-    {"num": "12", "name": "December"},
+  final List<String> availableMonths = [
+    "10-2026", "09-2026", "08-2026", "07-2026", "06-2026", "05-2026",
+    "04-2026", "03-2026", "02-2026", "01-2026", "12-2025", "11-2025",
+    "10-2025", "09-2025", "08-2025", "07-2025", "06-2025", "05-2025",
+    "04-2025", "03-2025", "02-2025", "01-2025"
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    DateTime now = DateTime.now();
+    selectedMonthYear = "${now.month.toString().padLeft(2, '0')}-${now.year}";
+  }
 
   void _openOldChartWebsite() async {
     final Uri url = Uri.parse("https://disawarking-official.github.io/DisawarKingApp/chart.html");
@@ -2163,16 +2160,10 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(selectedMonthNum == null ? "Results Archive Chart" : "$selectedMonthName $selectedYear"),
-        leading: selectedMonthNum != null
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.amber),
-                onPressed: () => setState(() => selectedMonthNum = null),
-              )
-            : null,
+        title: const Text("Results Chart Archive"),
         actions: [
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF59E0B),
@@ -2186,212 +2177,99 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
           )
         ],
       ),
-      body: selectedMonthNum == null ? _buildYearAndMonthsGrid() : _buildMonthChartTable(),
-    );
-  }
-
-  // 1. Year Selector & 2-Column x 6-Row Months Grid
-  Widget _buildYearAndMonthsGrid() {
-    // Current date is October 2026 -> so max clickable month in 2026 is 10
-    const int maxClickableMonthIn2026 = 10;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
+      body: Column(
         children: [
-          // Year Buttons (Year-2026, Year-2025)
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedYear == "2026" ? const Color(0xFFF59E0B) : const Color(0xFF131B2E),
-                    foregroundColor: selectedYear == "2026" ? Colors.black : Colors.white70,
-                    side: BorderSide(color: Colors.amber.withOpacity(0.5)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () => setState(() => selectedYear = "2026"),
-                  child: const Text("Year - 2026", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: const Color(0xFF131B2E),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("SELECT MONTH:", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13)),
+                DropdownButton<String>(
+                  value: availableMonths.contains(selectedMonthYear) ? selectedMonthYear : availableMonths.first,
+                  dropdownColor: const Color(0xFF131B2E),
+                  style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14),
+                  underline: Container(height: 1, color: Colors.amber),
+                  items: availableMonths.map((m) {
+                    return DropdownMenuItem(value: m, child: Text(m));
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) setState(() => selectedMonthYear = val);
+                  },
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedYear == "2025" ? const Color(0xFFF59E0B) : const Color(0xFF131B2E),
-                    foregroundColor: selectedYear == "2025" ? Colors.black : Colors.white70,
-                    side: BorderSide(color: Colors.amber.withOpacity(0.5)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () => setState(() => selectedYear = "2025"),
-                  child: const Text("Year - 2025", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text("CHOOSE MONTH:", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1)),
-          ),
-          const SizedBox(height: 12),
-          // 2 Columns x 6 Rows Grid
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 12,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 2.3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
+              ],
             ),
-            itemBuilder: (context, index) {
-              final m = monthsList[index];
-              int mNum = int.parse(m["num"]!);
-              bool isFutureMonth = (selectedYear == "2026" && mNum > maxClickableMonthIn2026);
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('results_history').snapshots(),
+              builder: (context, snapshot) {
+                Map<String, Map<String, String>> chartMap = {};
 
-              return InkWell(
-                onTap: isFutureMonth
-                    ? null
-                    : () {
-                        setState(() {
-                          selectedMonthNum = m["num"];
-                          selectedMonthName = m["name"]!;
-                        });
-                      },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isFutureMonth ? const Color(0xFF090D16) : const Color(0xFF131B2E),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isFutureMonth ? Colors.white10 : Colors.amber.withOpacity(0.3),
-                    ),
-                    boxShadow: isFutureMonth
-                        ? []
-                        : [
-                            BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
+                if (snapshot.hasData) {
+                  for (var doc in snapshot.data!.docs) {
+                    var data = doc.data() as Map<String, dynamic>;
+                    String dt = data['date']?.toString().padLeft(2, '0') ?? '';
+                    String market = data['market'] ?? '';
+                    String number = data['number'] ?? '--';
+                    String mYear = data['monthYear'] ?? "";
+
+                    if (mYear == selectedMonthYear && dt.isNotEmpty) {
+                      if (!chartMap.containsKey(dt)) chartMap[dt] = {};
+                      chartMap[dt]![market] = number;
+                    }
+                  }
+                }
+
+                List<String> all31Dates = List.generate(31, (index) => (index + 1).toString().padLeft(2, '0'));
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.vertical,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      headingRowHeight: 44,
+                      dataRowHeight: 40,
+                      headingRowColor: MaterialStateProperty.all(const Color(0xFF1E293B)),
+                      dataRowColor: MaterialStateProperty.all(const Color(0xFF090D16)),
+                      border: TableBorder.all(color: Colors.amber.withOpacity(0.3), width: 1),
+                      columns: [
+                        const DataColumn(label: Text("DATE", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12))),
+                        ...appMarkets.map((m) => DataColumn(
+                              label: Text(m.name, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 11)),
+                            )),
+                      ],
+                      rows: all31Dates.map((d) {
+                        return DataRow(
+                          cells: [
+                            DataCell(Text(d, style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12))),
+                            ...appMarkets.map((m) {
+                              String res = chartMap[d]?[m.name] ?? "--";
+                              return DataCell(
+                                Center(
+                                  child: Text(
+                                    res,
+                                    style: TextStyle(
+                                      color: (res == "--" || res == "XX") ? Colors.white24 : Colors.amber,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
                           ],
+                        );
+                      }).toList(),
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        m["name"]!,
-                        style: TextStyle(
-                          color: isFutureMonth ? Colors.white24 : Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                      if (isFutureMonth)
-                        const Text(
-                          "Coming Soon",
-                          style: TextStyle(color: Colors.white24, fontSize: 10),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  // 2. Direct Chart Table (Kram: Delhi Bazar, Shree Ganesh, Faridabad, Ghaziabad, Gali, Disawar)
-  Widget _buildMonthChartTable() {
-    final String monthKey = "$selectedMonthNum-$selectedYear";
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('results_history').snapshots(),
-      builder: (context, snapshot) {
-        Map<String, Map<String, String>> chartMap = {};
-
-        if (snapshot.hasData) {
-          for (var doc in snapshot.data!.docs) {
-            var data = doc.data() as Map<String, dynamic>;
-            String dt = data['date']?.toString().padLeft(2, '0') ?? '';
-            String market = data['market'] ?? '';
-            String number = data['number'] ?? '--';
-            String mYear = data['monthYear'] ?? "";
-
-            if (mYear == monthKey && dt.isNotEmpty) {
-              if (!chartMap.containsKey(dt)) chartMap[dt] = {};
-              chartMap[dt]![market] = number;
-            }
-          }
-        }
-
-        List<String> all31Dates = List.generate(31, (index) => (index + 1).toString().padLeft(2, '0'));
-
-        return Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              color: const Color(0xFF131B2E),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("$selectedMonthName $selectedYear Chart", style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
-                  TextButton.icon(
-                    icon: const Icon(Icons.arrow_back, size: 14, color: Colors.cyanAccent),
-                    label: const Text("Back to Months", style: TextStyle(color: Colors.cyanAccent, fontSize: 12)),
-                    onPressed: () => setState(() => selectedMonthNum = null),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    headingRowHeight: 46,
-                    dataRowHeight: 42,
-                    headingRowColor: MaterialStateProperty.all(const Color(0xFF1E293B)),
-                    dataRowColor: MaterialStateProperty.all(const Color(0xFF090D16)),
-                    border: TableBorder.all(color: Colors.amber.withOpacity(0.3), width: 1),
-                    columns: [
-                      const DataColumn(label: Text("DATE", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12))),
-                      ...appMarkets.map((m) => DataColumn(
-                            label: Text(m.name, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 11)),
-                          )),
-                    ],
-                    rows: all31Dates.map((d) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(d, style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12))),
-                          ...appMarkets.map((m) {
-                            String res = chartMap[d]?[m.name] ?? "--";
-                            return DataCell(
-                              Center(
-                                child: Text(
-                                  res,
-                                  style: TextStyle(
-                                    color: (res == "--" || res == "XX") ? Colors.white24 : Colors.amber,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }
@@ -2922,7 +2800,163 @@ class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
 }
+// ----------------- ADMIN PANEL CSV PASTE & IMPORT DIALOG -----------------
+class AdminCsvImportDialog extends StatefulWidget {
+  @override
+  _AdminCsvImportDialogState createState() => _AdminCsvImportDialogState();
+}
 
+class _AdminCsvImportDialogState extends State<AdminCsvImportDialog> {
+  final TextEditingController _monthController = TextEditingController(text: "09-2026");
+  final TextEditingController _csvController = TextEditingController();
+  bool _isUploading = false;
+  String _statusMsg = "";
+
+  void _uploadCsvData() async {
+    String mYear = _monthController.text.trim();
+    String rawCsv = _csvController.text.trim();
+
+    if (mYear.isEmpty || rawCsv.isEmpty) {
+      setState(() => _statusMsg = "Month aur CSV dono bharna zaroori hai!");
+      return;
+    }
+
+    setState(() {
+      _isUploading = true;
+      _statusMsg = "Data upload ho raha hai...";
+    });
+
+    try {
+      final lines = rawCsv.split("\n");
+      final batch = FirebaseFirestore.instance.batch();
+      int count = 0;
+
+      for (var line in lines) {
+        var parts = line.trim().split(",");
+        // CSV Format: Dt, DS, DL, SG, FB, GD, GL
+        if (parts.length >= 7 && int.tryParse(parts[0].trim()) != null) {
+          String date = parts[0].trim().padLeft(2, '0');
+          String ds = parts[1].trim();
+          String dl = parts[2].trim();
+          String sg = parts[3].trim();
+          String fb = parts[4].trim();
+          String gd = parts[5].trim();
+          String gl = parts[6].trim();
+
+          // Sahi kram: Delhi Bazar, Shri Ganesh, Faridabad, Ghaziabad, Gali, Disawar
+          Map<String, String> markets = {
+            "DELHI BAZAR": dl,
+            "SHREE GANESH": sg,
+            "FARIDABAD": fb,
+            "GHAZIABAD": gd,
+            "GALI": gl,
+            "DISAWAR": ds,
+          };
+
+          markets.forEach((marketName, resultNum) {
+            String docId = "${mYear}_${date}_$marketName";
+            var docRef = FirebaseFirestore.instance.collection('results_history').doc(docId);
+            batch.set(docRef, {
+              'date': date,
+              'monthYear': mYear,
+              'market': marketName,
+              'number': resultNum.isEmpty ? '--' : resultNum,
+              'timestamp': FieldValue.serverTimestamp(),
+            });
+            count++;
+          });
+        }
+      }
+
+      await batch.commit();
+      setState(() {
+        _isUploading = false;
+        _statusMsg = "Kamyab! $mYear ke $count results database me save ho gaye.";
+      });
+    } catch (e) {
+      setState(() {
+        _isUploading = false;
+        _statusMsg = "Error: $e";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF131B2E),
+      title: const Text("Upload Month CSV", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Month-Year (e.g. 09-2026, 08-2026, 01-2025):", style: TextStyle(color: Colors.white70, fontSize: 12)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _monthController,
+              style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFF090D16),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text("CSV Text Paste Karein (Dt,DS,DL,SG,FB,GD,GL):", style: TextStyle(color: Colors.white70, fontSize: 12)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _csvController,
+              maxLines: 7,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              decoration: InputDecoration(
+                hintText: "1,XX,58,89,45,86,81\n2,69,52,54,19,85,96...",
+                hintStyle: const TextStyle(color: Colors.white24),
+                filled: true,
+                fillColor: const Color(0xFF090D16),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (_statusMsg.isNotEmpty)
+              Text(
+                _statusMsg,
+                style: TextStyle(
+                  color: _statusMsg.contains("Error") ? Colors.redAccent : Colors.greenAccent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+        ),
+        ElevatedButton.icon(
+  style: ElevatedButton.styleFrom(
+    backgroundColor: const Color(0xFF38BDF8),
+    padding: const EdgeInsets.symmetric(vertical: 12),
+  ),
+  icon: const Icon(Icons.upload_file, color: Colors.black),
+  label: const Text("UPLOAD CSV DATA (MONTH WISE)", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+  onPressed: () {
+    showDialog(context: context, builder: (_) => AdminCsvImportDialog());
+  },
+),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+          onPressed: _isUploading ? null : _uploadCsvData,
+          child: _isUploading
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+              : const Text("Save To Database", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+}
 class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isImporting = false;
