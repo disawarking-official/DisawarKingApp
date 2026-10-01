@@ -88,6 +88,25 @@ Map<String, Map<String, dynamic>> dynamicMarketTimings = {
   "DISAWAR": {"closeHour": 4, "closeMin": 0, "closeTimeStr": "04:00 AM", "resultTimeStr": "05:00 AM"},
 };
 
+// Helper: 12-hour string (09:05 AM/PM) ko ghante aur minute me convert karta hai
+Map<String, int> parseTimeString(String timeStr) {
+  try {
+    String clean = timeStr.trim().toUpperCase();
+    bool isPm = clean.contains("PM");
+    bool isAm = clean.contains("AM");
+    clean = clean.replaceAll("AM", "").replaceAll("PM", "").trim();
+    var parts = clean.split(":");
+    int h = int.parse(parts[0].trim());
+    int m = int.parse(parts[1].trim());
+
+    if (isPm && h < 12) h += 12;
+    if (isAm && h == 12) h = 0;
+    return {"hour": h, "min": m};
+  } catch (_) {
+    return {"hour": 0, "min": 0};
+  }
+}
+
 bool isMonthEndToday() {
   DateTime now = DateTime.now();
   DateTime tomorrow = now.add(const Duration(days: 1));
@@ -103,8 +122,28 @@ class MarketConfig {
     required this.hindiName,
   });
 
-  int get closeHour => dynamicMarketTimings[name]?["closeHour"] ?? 0;
-  int get closeMin => dynamicMarketTimings[name]?["closeMin"] ?? 0;
+  int get closeHour {
+    if (dynamicMarketTimings.containsKey(name)) {
+      var d = dynamicMarketTimings[name]!;
+      if (d['closeHour'] != null && d['closeHour'] is int && d['closeHour'] > 0) {
+        return d['closeHour'];
+      }
+      return parseTimeString(d['closeTimeStr'] ?? "")["hour"] ?? 0;
+    }
+    return 0;
+  }
+
+  int get closeMin {
+    if (dynamicMarketTimings.containsKey(name)) {
+      var d = dynamicMarketTimings[name]!;
+      if (d['closeMin'] != null && d['closeMin'] is int) {
+        return d['closeMin'];
+      }
+      return parseTimeString(d['closeTimeStr'] ?? "")["min"] ?? 0;
+    }
+    return 0;
+  }
+
   String get closeTimeStr => dynamicMarketTimings[name]?["closeTimeStr"] ?? "--";
   String get resultTimeStr => dynamicMarketTimings[name]?["resultTimeStr"] ?? "--";
 
@@ -201,6 +240,28 @@ Widget buildAppLogo() {
       const Text("Official Gaming Platform", style: TextStyle(color: Colors.white70, fontSize: 12)),
     ],
   );
+}
+
+// ----------------- WALLET BALANCE PARSER (AUTO-FALLBACK) -----------------
+Map<String, double> extractUserBalances(Map<String, dynamic>? data) {
+  if (data == null) return {'deposit': 0.0, 'winning': 0.0, 'total': 0.0};
+
+  double dep = 0.0;
+  double win = 0.0;
+
+  if (data.containsKey('depositBalance')) {
+    dep = ((data['depositBalance'] ?? 0) as num).toDouble();
+  }
+  if (data.containsKey('winningBalance')) {
+    win = ((data['winningBalance'] ?? 0) as num).toDouble();
+  } else if (data.containsKey('balance')) {
+    // Purana legacy single field
+    win = ((data['balance'] ?? 0) as num).toDouble();
+  } else if (data.containsKey('wallet')) {
+    win = ((data['wallet'] ?? 0) as num).toDouble();
+  }
+
+  return {'deposit': dep, 'winning': win, 'total': (dep + win)};
 }
 
 // ----------------- SPLASH SCREEN -----------------
@@ -730,7 +791,125 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   }
 }
 
-// ----------------- 4. MAIN BOTTOM NAVIGATION (5 CLEAN TABS - NO DUPLICATE RESULT BUTTON) -----------------
+// ----------------- SIDE DRAWER COMPONENT (TOP-LEFT PROFILE AVATAR CLICK) -----------------
+class AppSideNavigationDrawer extends StatelessWidget {
+  void _logout(BuildContext context) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    currentLoggedInUserMobile = "";
+    currentLoggedInUserName = "";
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => LoginScreen()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: const Color(0xFF1E293B),
+      child: Column(
+        children: [
+          UserAccountsDrawerHeader(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [Color(0xFF312E81), Color(0xFF1E293B)]),
+            ),
+            currentAccountPicture: const CircleAvatar(
+              backgroundColor: Color(0xFFF59E0B),
+              child: Icon(Icons.person, color: Color(0xFF0F172A), size: 38),
+            ),
+            accountName: Text(
+              currentLoggedInUserName.isEmpty ? "User" : currentLoggedInUserName,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+            ),
+            accountEmail: Text(
+              "+91 $currentLoggedInUserMobile",
+              style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                if (currentLoggedInUserMobile == adminMobile)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.amber, width: 1.5),
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.amber.withOpacity(0.1),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.admin_panel_settings, color: Colors.amber, size: 28),
+                      title: const Text("ADMIN PANEL", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
+                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber, size: 14),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (c) => MasterAdminPanelScreen()));
+                      },
+                    ),
+                  ),
+                ListTile(
+                  leading: const Icon(Icons.share, color: Color(0xFFF59E0B)),
+                  title: const Text("Refer & Earn (7% Commission)"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (c) => ReferAndEarnScreen()));
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.sports_esports, color: Color(0xFFF59E0B)),
+                  title: const Text("My Played Game"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (c) => MyPlayGameScreen()));
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFFF59E0B)),
+                  title: const Text("Withdrawal History"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (c) => WithdrawalListScreen()));
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.chat, color: Color(0xFF25D366)),
+                  title: const Text("Help & Support (WhatsApp)"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    openWhatsAppChat();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.lock_reset, color: Color(0xFFF59E0B)),
+                  title: const Text("Change Password"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (c) => DirectResetPasswordScreen()));
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.description, color: Color(0xFFF59E0B)),
+                  title: const Text("Terms & Conditions"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (c) => TermsAndConditionsScreen()));
+                  },
+                ),
+                const Divider(color: Colors.white24),
+                ListTile(
+                  leading: const Icon(Icons.power_settings_new, color: Colors.redAccent),
+                  title: const Text("Logout", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  onTap: () => _logout(context),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+// ----------------- 4. MAIN BOTTOM NAVIGATION (CLEAN 4 BOTTOM TABS + LEFT DRAWER) -----------------
 class MainNavigationScreen extends StatefulWidget {
   @override
   _MainNavigationScreenState createState() => _MainNavigationScreenState();
@@ -758,7 +937,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             Map<String, dynamic> rawTimes = Map<String, dynamic>.from(d['marketTimings']);
             rawTimes.forEach((key, value) {
               if (dynamicMarketTimings.containsKey(key)) {
-                dynamicMarketTimings[key] = Map<String, dynamic>.from(value);
+                var mData = Map<String, dynamic>.from(value);
+                String cTime = mData['closeTimeStr'] ?? "";
+                var parsed = parseTimeString(cTime);
+                mData['closeHour'] = parsed['hour'];
+                mData['closeMin'] = parsed['min'];
+                dynamicMarketTimings[key] = mData;
               }
             });
           }
@@ -809,12 +993,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     GameMarketsListScreen(),
     CombinedAllMarketsChartScreen(),
     WalletScreen(),
-    MoreMenuScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: AppSideNavigationDrawer(),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -828,14 +1012,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.sports_esports), label: "Play Game"),
           BottomNavigationBarItem(icon: Icon(Icons.table_chart), label: "Chart"),
           BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: "Wallet"),
-          BottomNavigationBarItem(icon: Icon(Icons.menu), label: "More"),
         ],
       ),
     );
   }
 }
 
-// ----------------- 5. HOME SCREEN -----------------
+// ----------------- 5. HOME SCREEN (TOP LEFT PROFILE AVATAR OPENS DRAWER) -----------------
 class HomeLiveResultsScreen extends StatefulWidget {
   @override
   _HomeLiveResultsScreenState createState() => _HomeLiveResultsScreenState();
@@ -875,38 +1058,51 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 20,
-                        backgroundColor: Color(0xFFF59E0B),
-                        child: Icon(Icons.person, color: Color(0xFF0F172A), size: 24),
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  Builder(
+                    builder: (innerContext) => GestureDetector(
+                      onTap: () {
+                        Scaffold.of(innerContext).openDrawer();
+                      },
+                      child: Row(
                         children: [
-                          Text(currentLoggedInUserName.isEmpty ? "User" : currentLoggedInUserName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                          Text("+91 $currentLoggedInUserMobile", style: const TextStyle(fontSize: 12, color: Colors.amberAccent, fontWeight: FontWeight.w500)),
+                          Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              const CircleAvatar(
+                                radius: 22,
+                                backgroundColor: Color(0xFFF59E0B),
+                                child: Icon(Icons.person, color: Color(0xFF0F172A), size: 26),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(color: Color(0xFF0F172A), shape: BoxShape.circle),
+                                child: const Icon(Icons.menu, size: 12, color: Colors.amber),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(currentLoggedInUserName.isEmpty ? "User" : currentLoggedInUserName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                              Text("+91 $currentLoggedInUserMobile", style: const TextStyle(fontSize: 12, color: Colors.amberAccent, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                   Row(
                     children: [
                       StreamBuilder<DocumentSnapshot>(
                         stream: FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).snapshots(),
                         builder: (context, snapshot) {
-                          double depBal = 0.0;
-                          double winBal = 0.0;
+                          double totalBal = 0.0;
                           if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
                             var d = snapshot.data!.data() as Map<String, dynamic>?;
-                            if (d != null) {
-                              depBal = ((d['depositBalance'] ?? 0) as num).toDouble();
-                              winBal = ((d['winningBalance'] ?? 0) as num).toDouble();
-                            }
+                            var balMap = extractUserBalances(d);
+                            totalBal = balMap['total'] ?? 0.0;
                           }
-                          double totalBal = depBal + winBal;
 
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1087,7 +1283,7 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
   }
 }
 
-// ----------------- 6. PLAY GAME MARKET LIST (DUPLICATE MONTH-END TEXT REMOVED) -----------------
+// ----------------- 6. PLAY GAME MARKET LIST -----------------
 class GameMarketsListScreen extends StatefulWidget {
   @override
   _GameMarketsListScreenState createState() => _GameMarketsListScreenState();
@@ -1137,7 +1333,6 @@ class _GameMarketsListScreenState extends State<GameMarketsListScreen> {
                       children: [
                         Text("${market.hindiName} (${market.name})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFF59E0B))),
                         const SizedBox(height: 4),
-                        // Clean: Only show timer if not month-end closed to avoid duplication
                         if (timeLeft != "Month End Closed" && timeLeft != "Maintenance Mode")
                           Text(
                             "Band hone me: $timeLeft",
@@ -1189,7 +1384,7 @@ class _GameMarketsListScreenState extends State<GameMarketsListScreen> {
   }
 }
 
-// ----------------- 7. GAME MODE SELECT (NEW 10 KA 900 / 10 KA 90 RATES) -----------------
+// ----------------- 7. GAME MODE SELECT -----------------
 class GameModeSelectScreen extends StatelessWidget {
   final MarketConfig market;
   GameModeSelectScreen({required this.market});
@@ -1259,9 +1454,10 @@ Future<bool> deductGamePoints(String mobile, double points) async {
   if (!snap.exists) return false;
 
   var d = snap.data()!;
-  double dep = ((d['depositBalance'] ?? 0) as num).toDouble();
-  double win = ((d['winningBalance'] ?? 0) as num).toDouble();
-  double total = dep + win;
+  var bal = extractUserBalances(d);
+  double dep = bal['deposit']!;
+  double win = bal['winning']!;
+  double total = bal['total']!;
 
   if (points > total) return false;
 
@@ -1393,9 +1589,8 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
               double total = 0.0;
               if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
                 var d = snapshot.data!.data() as Map<String, dynamic>?;
-                if (d != null) {
-                  total = ((d['depositBalance'] ?? 0) as num).toDouble() + ((d['winningBalance'] ?? 0) as num).toDouble();
-                }
+                var bMap = extractUserBalances(d);
+                total = bMap['total'] ?? 0.0;
               }
               return Center(child: Padding(padding: const EdgeInsets.only(right: 16), child: Text("Bal: ₹${total.toStringAsFixed(2)}", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold))));
             },
@@ -1861,13 +2056,56 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   }
 }
 
-// ----------------- 11. ALL-IN-ONE MASTER CHART SCREEN -----------------
-class CombinedAllMarketsChartScreen extends StatelessWidget {
+// ----------------- 11. MONTH-WISE ALL-IN-ONE MASTER CHART SCREEN -----------------
+class CombinedAllMarketsChartScreen extends StatefulWidget {
+  @override
+  _CombinedAllMarketsChartScreenState createState() => _CombinedAllMarketsChartScreenState();
+}
+
+class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartScreen> {
+  String selectedMonthYear = "";
+
+  @override
+  void initState() {
+    super.initState();
+    DateTime now = DateTime.now();
+    selectedMonthYear = "${now.month.toString().padLeft(2, '0')}-${now.year}";
+  }
+
   @override
   Widget build(BuildContext context) {
+    DateTime now = DateTime.now();
+    List<String> monthOptions = [];
+    for (int i = 0; i < 6; i++) {
+      DateTime prev = DateTime(now.year, now.month - i, 1);
+      monthOptions.add("${prev.month.toString().padLeft(2, '0')}-${prev.year}");
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("DisawarKing Master Chart"),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                dropdownColor: const Color(0xFF1E293B),
+                value: selectedMonthYear,
+                style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
+                icon: const Icon(Icons.calendar_month, color: Colors.amber, size: 20),
+                items: monthOptions.map((String m) {
+                  return DropdownMenuItem<String>(
+                    value: m,
+                    child: Text(m),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => selectedMonthYear = val);
+                },
+              ),
+            ),
+          )
+        ],
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('results_history').snapshots(),
@@ -1885,6 +2123,11 @@ class CombinedAllMarketsChartScreen extends StatelessWidget {
               String dt = data['date'] ?? '';
               String market = data['market'] ?? '';
               String number = data['number'] ?? 'XX';
+              String monthYear = data['monthYear'] ?? "";
+
+              if (monthYear.isNotEmpty && monthYear != selectedMonthYear) {
+                continue;
+              }
 
               if (dt.isNotEmpty) {
                 if (!dates.contains(dt)) {
@@ -1905,8 +2148,8 @@ class CombinedAllMarketsChartScreen extends StatelessWidget {
           });
 
           if (dates.isEmpty) {
-            return const Center(
-              child: Text("Abhi Chart ka koi record nahi hai.", style: TextStyle(color: Colors.white54, fontSize: 14)),
+            return Center(
+              child: Text("Month ($selectedMonthYear) me Chart ka koi record nahi hai.", style: const TextStyle(color: Colors.white54, fontSize: 14)),
             );
           }
 
@@ -1986,14 +2229,15 @@ class WalletScreen extends StatelessWidget {
                 builder: (context, snapshot) {
                   double depBal = 0.0;
                   double winBal = 0.0;
+                  double totalBal = 0.0;
+
                   if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
                     var d = snapshot.data!.data() as Map<String, dynamic>?;
-                    if (d != null) {
-                      depBal = ((d['depositBalance'] ?? 0) as num).toDouble();
-                      winBal = ((d['winningBalance'] ?? 0) as num).toDouble();
-                    }
+                    var bMap = extractUserBalances(d);
+                    depBal = bMap['deposit'] ?? 0.0;
+                    winBal = bMap['winning'] ?? 0.0;
+                    totalBal = bMap['total'] ?? 0.0;
                   }
-                  double totalBal = depBal + winBal;
 
                   return Column(
                     children: [
@@ -2166,7 +2410,7 @@ class _AddMoneyPaymentScreenState extends State<AddMoneyPaymentScreen> {
   }
 }
 
-// ----------------- 14. WITHDRAW SCREEN (ONLY WINNING BALANCE ALLOWED) -----------------
+// ----------------- 14. WITHDRAW SCREEN -----------------
 class WithdrawRequestScreen extends StatefulWidget {
   @override
   _WithdrawRequestScreenState createState() => _WithdrawRequestScreenState();
@@ -2265,9 +2509,9 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
     setState(() => _isSaving = true);
     try {
       var userDoc = await FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).get();
-      double winBal = ((userDoc.data()?['winningBalance'] ?? 0) as num).toDouble();
+      var bMap = extractUserBalances(userDoc.data());
+      double winBal = bMap['winning'] ?? 0.0;
 
-      // STRICT VALIDATION: Direct deposit cannot be withdrawn
       if (amt > winBal) {
         showDialog(
           context: context,
@@ -2423,57 +2667,6 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
   }
 }
 
-// ----------------- 15. MORE MENU SCREEN -----------------
-class MoreMenuScreen extends StatelessWidget {
-  void _logout(BuildContext context) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    currentLoggedInUserMobile = "";
-    currentLoggedInUserName = "";
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => LoginScreen()));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("More Menu")),
-      body: ListView(
-        children: [
-          if (currentLoggedInUserMobile == adminMobile)
-            Container(
-              margin: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.amber, width: 2),
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.amber.withOpacity(0.1),
-              ),
-              child: ListTile(
-                leading: const Icon(Icons.admin_panel_settings, color: Colors.amber, size: 30),
-                title: const Text("MASTER ADMIN PANEL", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
-                subtitle: const Text("Result Ghoshan, Bets, Deposits, Remote Settings", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => MasterAdminPanelScreen())),
-              ),
-            ),
-          ListTile(
-            leading: const Icon(Icons.share, color: Color(0xFFF59E0B)),
-            title: const Text("Refer & Earn (7% Commission)"),
-            subtitle: const Text("Doston ko refer karein aur 7% commission payein", style: TextStyle(color: Colors.white54, fontSize: 11)),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => ReferAndEarnScreen())),
-          ),
-          ListTile(leading: const Icon(Icons.sports_esports, color: Color(0xFFF59E0B)), title: const Text("My Played Game"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => MyPlayGameScreen()))),
-          ListTile(leading: const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFFF59E0B)), title: const Text("Withdrawal History"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => WithdrawalListScreen()))),
-          ListTile(leading: const Icon(Icons.chat, color: Color(0xFF25D366)), title: const Text("Help & Support (WhatsApp)"), onTap: () => openWhatsAppChat()),
-          ListTile(leading: const Icon(Icons.lock_reset, color: Color(0xFFF59E0B)), title: const Text("Change Password"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => DirectResetPasswordScreen()))),
-          ListTile(leading: const Icon(Icons.description, color: Color(0xFFF59E0B)), title: const Text("Terms & Conditions"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => TermsAndConditionsScreen()))),
-          const Divider(),
-          ListTile(leading: const Icon(Icons.power_settings_new, color: Colors.red), title: const Text("Logout", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)), onTap: () => _logout(context)),
-        ],
-      ),
-    );
-  }
-}
-
 // ----------------- REFER & EARN SCREEN -----------------
 class ReferAndEarnScreen extends StatelessWidget {
   @override
@@ -2539,7 +2732,7 @@ class ReferAndEarnScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 16. MASTER ADMIN PANEL (RESULT ENGINE 10 KA 900 & 10 KA 90) -----------------
+// ----------------- 16. MASTER ADMIN PANEL -----------------
 class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
@@ -2576,10 +2769,13 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
     try {
       Map<String, dynamic> updatedTimings = {};
       dynamicMarketTimings.forEach((market, data) {
+        String cTime = _closeTimeControllers[market]?.text.trim() ?? data['closeTimeStr'];
+        var parsed = parseTimeString(cTime);
+
         updatedTimings[market] = {
-          'closeHour': data['closeHour'],
-          'closeMin': data['closeMin'],
-          'closeTimeStr': _closeTimeControllers[market]?.text.trim() ?? data['closeTimeStr'],
+          'closeHour': parsed['hour'],
+          'closeMin': parsed['min'],
+          'closeTimeStr': cTime,
           'resultTimeStr': _resultTimeControllers[market]?.text.trim() ?? data['resultTimeStr'],
         };
       });
@@ -2596,7 +2792,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
       }, SetOptions(merge: true));
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(backgroundColor: Colors.green, content: Text("Settings, Timings & Rules Live Update Ho Gaye!")),
+        const SnackBar(backgroundColor: Colors.green, content: Text("Settings & Timings Live Update Ho Gaye! Timer Synchronized.")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
@@ -2651,11 +2847,12 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
 
         void addEntry(String market, String num) {
           if (num.isNotEmpty) {
-            var docRef = historyCol.doc("${dt}_$market");
+            var docRef = historyCol.doc("2026-09_${dt}_$market");
             batch.set(docRef, {
               'market': market,
               'number': num,
               'date': dt,
+              'monthYear': "09-2026",
               'timestamp': Timestamp.fromDate(fakeTimestamp),
             });
           }
@@ -2702,7 +2899,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              "Jis tarikh me se result hatana hai (jaise Gali me 30 tarikh), wo tarikh dalein. Chart me se wo cell khali (--) ho jayegi.",
+              "Jis tarikh me se result hatana hai, wo tarikh dalein. Us mahine ke chart se wo entry delete ho jayegi.",
               style: TextStyle(color: Colors.white70, fontSize: 13),
             ),
             const SizedBox(height: 14),
@@ -2725,7 +2922,12 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
               if (dt.isEmpty) return;
               Navigator.pop(ctx);
 
+              DateTime now = DateTime.now();
+              String curMonthYear = "${now.month.toString().padLeft(2, '0')}-${now.year}";
+
               try {
+                // Purane aur naye dono key patterns ko check karke delete karo
+                await FirebaseFirestore.instance.collection('results_history').doc("${curMonthYear}_${dt}_$marketName").delete();
                 await FirebaseFirestore.instance.collection('results_history').doc("${dt}_$marketName").delete();
 
                 var liveDoc = await FirebaseFirestore.instance.collection('results').doc(marketName).get();
@@ -2839,6 +3041,8 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
 
                       setDialogState(() => isProcessing = true);
                       var firestore = FirebaseFirestore.instance;
+                      DateTime now = DateTime.now();
+                      String curMonthYear = "${now.month.toString().padLeft(2, '0')}-${now.year}";
 
                       try {
                         await firestore.collection('results').doc(marketName).set({
@@ -2848,10 +3052,12 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           'wasCorrected': isReDeclaration,
                         });
 
-                        await firestore.collection('results_history').doc("${chosenDate}_$marketName").set({
+                        // Unique month-wise separation key
+                        await firestore.collection('results_history').doc("${curMonthYear}_${chosenDate}_$marketName").set({
                           'market': marketName,
                           'number': result,
                           'date': chosenDate,
+                          'monthYear': curMonthYear,
                           'timestamp': FieldValue.serverTimestamp(),
                         });
 
@@ -2919,7 +3125,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           double betAmt = ((bet['amount'] ?? 0) as num).toDouble();
                           double winAmount = 0.0;
 
-                          // 10 ka 900 rate (90 guna)
                           if (type == "Jodi") {
                             if (bet.containsKey('betMap') && bet['betMap'] != null) {
                               Map<String, dynamic> betMap = Map<String, dynamic>.from(bet['betMap']);
@@ -2937,7 +3142,6 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                             }
                           }
 
-                          // 10 ka 90 rate (9 guna)
                           if (type == "Harup") {
                             if (bet.containsKey('andarMap') && bet['andarMap'] != null) {
                               Map<String, dynamic> aMap = Map<String, dynamic>.from(bet['andarMap']);
@@ -3038,12 +3242,12 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
           controller: _tabController,
           indicatorColor: Colors.amber,
           isScrollable: true,
-          tabs: [
-            const Tab(text: "Results"),
-            const Tab(text: "Live Bets"),
-            const Tab(text: "Deposits"),
-            const Tab(text: "Withdrawals"),
-            const Tab(text: "Settings"),
+          tabs: const [
+            Tab(text: "Results"),
+            Tab(text: "Live Bets"),
+            Tab(text: "Deposits"),
+            Tab(text: "Withdrawals"),
+            Tab(text: "Settings"),
           ],
         ),
       ),
@@ -3148,7 +3352,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
             },
           ),
 
-          // TAB 3: DEPOSITS (WITH 5% 1st DEPOSIT BONUS)
+          // TAB 3: DEPOSITS
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('deposits').orderBy('timestamp', descending: true).limit(50).snapshots(),
             builder: (context, snapshot) {
@@ -3300,7 +3504,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
             },
           ),
 
-          // TAB 5: REMOTE SETTINGS (LIVE TIMINGS, T&C, UPI, ETC.)
+          // TAB 5: REMOTE SETTINGS (LIVE TIMINGS WITH AUTO-PARSE)
           ListView(
             padding: const EdgeInsets.all(14),
             children: [
@@ -3314,7 +3518,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                     children: [
                       const Text("1. Live Market Timings (Close & Result)", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
                       const SizedBox(height: 4),
-                      const Text("Yahan se time badal kar Save karein, sabhi users ke app par turant naya time apply hoga.", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                      const Text("Yahan se time badal kar Save karein, sabhi users ke app par turant naya time aur live timer count start ho jayega.", style: TextStyle(color: Colors.white54, fontSize: 11)),
                       const Divider(color: Colors.white12, height: 16),
                       ...appMarkets.map((m) {
                         return Padding(
@@ -3329,14 +3533,14 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                                   Expanded(
                                     child: TextField(
                                       controller: _closeTimeControllers[m.name],
-                                      decoration: const InputDecoration(labelText: "Close Time (e.g. 05:50 PM)", border: OutlineInputBorder(), isDense: true),
+                                      decoration: const InputDecoration(labelText: "Close Time (e.g. 09:05 AM)", border: OutlineInputBorder(), isDense: true),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: TextField(
                                       controller: _resultTimeControllers[m.name],
-                                      decoration: const InputDecoration(labelText: "Result Time (e.g. 06:15 PM)", border: OutlineInputBorder(), isDense: true),
+                                      decoration: const InputDecoration(labelText: "Result Time (e.g. 09:10 AM)", border: OutlineInputBorder(), isDense: true),
                                     ),
                                   ),
                                 ],
@@ -3470,15 +3674,14 @@ class MyPlayGameScreen extends StatelessWidget {
                       )
                     ],
                   ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
+                );
+              },
+            );
+          },
+        ),
+      );
+    }
   }
-}
 
 // ----------------- 18. WITHDRAWAL LIST SCREEN -----------------
 class WithdrawalListScreen extends StatelessWidget {
@@ -3526,7 +3729,7 @@ class WithdrawalListScreen extends StatelessWidget {
   }
 }
 
-// ----------------- 19. TERMS & CONDITIONS SCREEN (DYNAMIC LIVE TEXT) -----------------
+// ----------------- 19. TERMS & CONDITIONS SCREEN -----------------
 class TermsAndConditionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
