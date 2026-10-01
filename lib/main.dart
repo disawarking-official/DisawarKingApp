@@ -61,7 +61,8 @@ class DisawarKingApp extends StatelessWidget {
 String currentLoggedInUserMobile = "";
 String currentLoggedInUserName = "";
 
-final List<String> authorizedAdmins = ["9761630128", "7409989270"];
+// Sirf ek admin number
+final List<String> authorizedAdmins = ["7409989270"];
 bool get isCurrentUserAdmin => authorizedAdmins.contains(currentLoggedInUserMobile.trim());
 
 String dynamicWhatsAppNumber = "917409989270";
@@ -790,7 +791,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   }
 }
 
-// ----------------- SIDE DRAWER COMPONENT (ONLY ADMINS GET ADMIN BUTTON) -----------------
+// ----------------- SIDE DRAWER COMPONENT -----------------
 class AppSideNavigationDrawer extends StatelessWidget {
   void _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -2364,7 +2365,7 @@ class WalletScreen extends StatelessWidget {
               ),
             ),
             const Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2800,7 +2801,8 @@ class MasterAdminPanelScreen extends StatefulWidget {
   @override
   _MasterAdminPanelScreenState createState() => _MasterAdminPanelScreenState();
 }
-// ----------------- ADMIN PANEL CSV PASTE & IMPORT DIALOG -----------------
+
+// ----------------- ADMIN PANEL CSV IMPORT DIALOG -----------------
 class AdminCsvImportDialog extends StatefulWidget {
   @override
   _AdminCsvImportDialogState createState() => _AdminCsvImportDialogState();
@@ -2843,7 +2845,7 @@ class _AdminCsvImportDialogState extends State<AdminCsvImportDialog> {
           String gd = parts[5].trim();
           String gl = parts[6].trim();
 
-          // Sahi kram: Delhi Bazar, Shri Ganesh, Faridabad, Ghaziabad, Gali, Disawar
+          // Sahi sequence
           Map<String, String> markets = {
             "DELHI BAZAR": dl,
             "SHREE GANESH": sg,
@@ -2903,7 +2905,7 @@ class _AdminCsvImportDialogState extends State<AdminCsvImportDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text("CSV Text Paste Karein (Dt,DS,DL,SG,FB,GD,GL):", style: TextStyle(color: Colors.white70, fontSize: 12)),
+            const Text("CSV Data Paste Karein:\nFormat: Dt,DS,DL,SG,FB,GD,GL", style: TextStyle(color: Colors.white70, fontSize: 12)),
             const SizedBox(height: 6),
             TextField(
               controller: _csvController,
@@ -2935,17 +2937,6 @@ class _AdminCsvImportDialogState extends State<AdminCsvImportDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
         ),
-        ElevatedButton.icon(
-  style: ElevatedButton.styleFrom(
-    backgroundColor: const Color(0xFF38BDF8),
-    padding: const EdgeInsets.symmetric(vertical: 12),
-  ),
-  icon: const Icon(Icons.upload_file, color: Colors.black),
-  label: const Text("UPLOAD CSV DATA (MONTH WISE)", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-  onPressed: () {
-    showDialog(context: context, builder: (_) => AdminCsvImportDialog());
-  },
-),
         ElevatedButton(
           style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
           onPressed: _isUploading ? null : _uploadCsvData,
@@ -2957,9 +2948,9 @@ class _AdminCsvImportDialogState extends State<AdminCsvImportDialog> {
     );
   }
 }
+
 class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isImporting = false;
 
   final _whatsappCtrl = TextEditingController(text: dynamicWhatsAppNumber);
   final _upiCtrl = TextEditingController(text: dynamicUpiId);
@@ -3011,89 +3002,12 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
       }, SetOptions(merge: true));
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(backgroundColor: Colors.green, content: Text("Settings & Timings Live Update Ho Gaye! Timer Synchronized.")),
+        const SnackBar(backgroundColor: Colors.green, content: Text("Settings & Timings Live Update Ho Gaye!")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
     } finally {
       if (mounted) setState(() => _isSavingSettings = false);
-    }
-  }
-
-  void _importPastChartData() async {
-    setState(() => _isImporting = true);
-
-    final List<Map<String, dynamic>> rawChart = [
-      {"date": "01", "DLBZ": "58", "SRGN": "89", "FRBD": "45", "GZBD": "86", "GALI": "81", "DSWR": ""},
-      {"date": "02", "DLBZ": "52", "SRGN": "54", "FRBD": "19", "GZBD": "85", "GALI": "96", "DSWR": "69"},
-      {"date": "03", "DLBZ": "88", "SRGN": "20", "FRBD": "08", "GZBD": "32", "GALI": "77", "DSWR": "57"},
-      {"date": "04", "DLBZ": "18", "SRGN": "01", "FRBD": "02", "GZBD": "95", "GALI": "26", "DSWR": "95"},
-      {"date": "05", "DLBZ": "44", "SRGN": "02", "FRBD": "30", "GZBD": "68", "GALI": "37", "DSWR": "59"},
-      {"date": "06", "DLBZ": "71", "SRGN": "25", "FRBD": "88", "GZBD": "69", "GALI": "94", "DSWR": "78"},
-      {"date": "07", "DLBZ": "61", "SRGN": "17", "FRBD": "02", "GZBD": "02", "GALI": "10", "DSWR": "67"},
-      {"date": "08", "DLBZ": "84", "SRGN": "83", "FRBD": "71", "GZBD": "93", "GALI": "64", "DSWR": "92"},
-      {"date": "09", "DLBZ": "18", "SRGN": "15", "FRBD": "29", "GZBD": "93", "GALI": "69", "DSWR": "54"},
-      {"date": "10", "DLBZ": "52", "SRGN": "12", "FRBD": "15", "GZBD": "72", "GALI": "40", "DSWR": "93"},
-      {"date": "11", "DLBZ": "59", "SRGN": "32", "FRBD": "72", "GZBD": "98", "GALI": "34", "DSWR": "40"},
-      {"date": "12", "DLBZ": "81", "SRGN": "42", "FRBD": "65", "GZBD": "16", "GALI": "35", "DSWR": "46"},
-      {"date": "13", "DLBZ": "55", "SRGN": "48", "FRBD": "74", "GZBD": "47", "GALI": "72", "DSWR": "02"},
-      {"date": "14", "DLBZ": "86", "SRGN": "34", "FRBD": "30", "GZBD": "50", "GALI": "87", "DSWR": "35"},
-      {"date": "15", "DLBZ": "46", "SRGN": "28", "FRBD": "24", "GZBD": "19", "GALI": "83", "DSWR": "89"},
-      {"date": "16", "DLBZ": "68", "SRGN": "94", "FRBD": "21", "GZBD": "42", "GALI": "91", "DSWR": "31"},
-      {"date": "17", "DLBZ": "99", "SRGN": "50", "FRBD": "38", "GZBD": "34", "GALI": "73", "DSWR": "90"},
-      {"date": "18", "DLBZ": "84", "SRGN": "38", "FRBD": "36", "GZBD": "03", "GALI": "50", "DSWR": "49"},
-      {"date": "19", "DLBZ": "24", "SRGN": "20", "FRBD": "21", "GZBD": "86", "GALI": "07", "DSWR": "35"},
-      {"date": "20", "DLBZ": "47", "SRGN": "80", "FRBD": "84", "GZBD": "24", "GALI": "66", "DSWR": "32"},
-      {"date": "21", "DLBZ": "62", "SRGN": "08", "FRBD": "71", "GZBD": "70", "GALI": "32", "DSWR": "01"},
-      {"date": "22", "DLBZ": "03", "SRGN": "98", "FRBD": "42", "GZBD": "50", "GALI": "00", "DSWR": "73"},
-      {"date": "23", "DLBZ": "92", "SRGN": "10", "FRBD": "00", "GZBD": "42", "GALI": "02", "DSWR": "35"},
-      {"date": "24", "DLBZ": "27", "SRGN": "48", "FRBD": "38", "GZBD": "32", "GALI": "90", "DSWR": "26"},
-      {"date": "25", "DLBZ": "44", "SRGN": "68", "FRBD": "08", "GZBD": "63", "GALI": "37", "DSWR": "86"},
-      {"date": "26", "DLBZ": "55", "SRGN": "43", "FRBD": "09", "GZBD": "18", "GALI": "66", "DSWR": "48"},
-      {"date": "27", "DLBZ": "35", "SRGN": "07", "FRBD": "61", "GZBD": "66", "GALI": "64", "DSWR": "81"},
-      {"date": "28", "DLBZ": "66", "SRGN": "90", "FRBD": "58", "GZBD": "03", "GALI": "03", "DSWR": "49"},
-      {"date": "29", "DLBZ": "", "SRGN": "", "FRBD": "", "GZBD": "", "GALI": "", "DSWR": "43"},
-    ];
-
-    try {
-      final batch = FirebaseFirestore.instance.batch();
-      final historyCol = FirebaseFirestore.instance.collection('results_history');
-
-      for (var row in rawChart) {
-        String dt = row['date'];
-        int dayNum = int.parse(dt);
-        DateTime fakeTimestamp = DateTime(2026, 9, dayNum, 12, 0);
-
-        void addEntry(String market, String num) {
-          if (num.isNotEmpty) {
-            var docRef = historyCol.doc("09-2026_${dt}_$market");
-            batch.set(docRef, {
-              'market': market,
-              'number': num,
-              'date': dt,
-              'monthYear': "09-2026",
-              'timestamp': Timestamp.fromDate(fakeTimestamp),
-            });
-          }
-        }
-
-        addEntry("DELHI BAZAR", row['DLBZ']);
-        addEntry("SHREE GANESH", row['SRGN']);
-        addEntry("FARIDABAD", row['FRBD']);
-        addEntry("GHAZIABAD", row['GZBD']);
-        addEntry("GALI", row['GALI']);
-        addEntry("DISAWAR", row['DSWR']);
-      }
-
-      await batch.commit();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(backgroundColor: Colors.green, content: Text("September 29 Dinon Ka Pura Chart Wapas Upload Ho Gaya!")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
-    } finally {
-      if (mounted) setState(() => _isImporting = false);
     }
   }
 
@@ -3209,7 +3123,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(color: Colors.red.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.redAccent)),
                       child: Text(
-                        "⚠️️ Is Market ka pehle se '$existingResult' khula hai.\n\nNaya number save karne par purana galat balance wapas katega aur naye winners ko rashi mil jayegi.",
+                        "⚠ Is Market ka pehle se '$existingResult' khula hai.\n\nNaya number save karne par purana galat balance wapas katega aur naye winners ko rashi mil jayegi.",
                         style: const TextStyle(color: Colors.white, fontSize: 12),
                       ),
                     ),
@@ -3485,26 +3399,20 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
           ListView(
             padding: const EdgeInsets.all(12),
             children: [
+              // SIRF EK HI SINGLE BUTTON
               Container(
                 margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFFD97706), Color(0xFFF59E0B)]),
-                  borderRadius: BorderRadius.circular(10),
-                ),
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
+                    backgroundColor: const Color(0xFF38BDF8),
                     padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  icon: _isImporting
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                      : const Icon(Icons.cloud_upload, color: Colors.black, size: 26),
-                  label: Text(
-                    _isImporting ? "UPLOADING CHART DATA..." : "ONE-CLICK RESTORE SEPTEMBER CHART",
-                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                  onPressed: _isImporting ? null : _importPastChartData,
+                  icon: const Icon(Icons.upload_file, color: Colors.black, size: 24),
+                  label: const Text("UPLOAD CSV DATA (MONTH WISE)", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13)),
+                  onPressed: () {
+                    showDialog(context: context, builder: (_) => AdminCsvImportDialog());
+                  },
                 ),
               ),
               ...appMarkets.map((m) {
