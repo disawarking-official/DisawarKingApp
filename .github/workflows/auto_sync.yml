@@ -1,0 +1,29 @@
+name: Auto Sync Results From KingOfSatta
+
+on:
+  schedule:
+    # Har 15 minute me background me automatically chalega
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Test karne ke liye manually chalane ka button
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests beautifulsoup4 firebase-admin
+
+      - name: Run Auto Sync Script
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          python sync_results.py
