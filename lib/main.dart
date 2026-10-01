@@ -2143,7 +2143,7 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
   }
 
   void _openOldChartWebsite() async {
-    final Uri url = Uri.parse("https://disawarking-official.github.io/DisawarkingApp/chart.html");
+    final Uri url = Uri.parse("https://disawarking-official.github.io/DisawarKingApp/chart.html");
     try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } catch (_) {}
