@@ -60,7 +60,6 @@ class DisawarKingApp extends StatelessWidget {
 // ----------------- DYNAMIC APP CONFIG & GLOBALS -----------------
 String currentLoggedInUserMobile = "";
 String currentLoggedInUserName = "";
-const String adminMobile = "9761630128";
 
 String dynamicWhatsAppNumber = "917409989270";
 String dynamicUpiId = "9761630128@ybl";
@@ -788,7 +787,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
   }
 }
 
-// ----------------- SIDE DRAWER COMPONENT -----------------
+// ----------------- SIDE DRAWER COMPONENT (HAR USER KO ADMIN BUTTON DIKHEGA) -----------------
 class AppSideNavigationDrawer extends StatelessWidget {
   void _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -810,39 +809,39 @@ class AppSideNavigationDrawer extends StatelessWidget {
             ),
             currentAccountPicture: const CircleAvatar(
               backgroundColor: Color(0xFFF59E0B),
-              child: Icon(Icons.person, color: Color(0xFF0F172A), size: 38),
+              child: Icon(Icons.person, color: Color(0xFF0F172A), size: 40),
             ),
             accountName: Text(
               currentLoggedInUserName.isEmpty ? "User" : currentLoggedInUserName,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white),
             ),
             accountEmail: Text(
               "+91 $currentLoggedInUserMobile",
-              style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.w600),
+              style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ),
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                if (currentLoggedInUserMobile == adminMobile)
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.amber, width: 1.5),
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.amber.withOpacity(0.1),
-                    ),
-                    child: ListTile(
-                      leading: const Icon(Icons.admin_panel_settings, color: Colors.amber, size: 28),
-                      title: const Text("ADMIN PANEL", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
-                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber, size: 14),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (c) => MasterAdminPanelScreen()));
-                      },
-                    ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.amber, width: 2),
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.amber.withOpacity(0.15),
                   ),
+                  child: ListTile(
+                    leading: const Icon(Icons.admin_panel_settings, color: Colors.amber, size: 30),
+                    title: const Text("MASTER ADMIN PANEL", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text("Results, Bets, Timings Control", style: TextStyle(color: Colors.white60, fontSize: 11)),
+                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber, size: 14),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (c) => MasterAdminPanelScreen()));
+                    },
+                  ),
+                ),
                 ListTile(
                   leading: const Icon(Icons.share, color: Color(0xFFF59E0B)),
                   title: const Text("Refer & Earn (7% Commission)"),
@@ -906,7 +905,7 @@ class AppSideNavigationDrawer extends StatelessWidget {
   }
 }
 
-// ----------------- 4. MAIN BOTTOM NAVIGATION -----------------
+// ----------------- 4. MAIN NAVIGATION SCREEN -----------------
 class MainNavigationScreen extends StatefulWidget {
   @override
   _MainNavigationScreenState createState() => _MainNavigationScreenState();
@@ -944,39 +943,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             });
           }
         });
-
-        if (dynamicLatestApkUrl.isNotEmpty && mounted) {
-          _showUpdateNoticeDialog(dynamicLatestApkUrl);
-        }
       }
     });
-  }
-
-  void _showUpdateNoticeDialog(String apkUrl) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text("नया अपडेट उपलब्ध है! 🚀", style: TextStyle(color: Colors.amber)),
-        content: const Text(
-          "ऐप का एक नया और बेहतर वर्ज़न आ चुका है। सुचारू रूप से खेलने के लिए अभी अपडेट करें।",
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
-            onPressed: () async {
-              final Uri u = Uri.parse(apkUrl);
-              try {
-                await launchUrl(u, mode: LaunchMode.externalApplication);
-              } catch (_) {}
-            },
-            child: const Text("UPDATE NOW", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -985,18 +953,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.dispose();
   }
 
-  final List<Widget> _screens = [
-    HomeLiveResultsScreen(),
-    GameMarketsListScreen(),
-    CombinedAllMarketsChartScreen(),
-    WalletScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: AppSideNavigationDrawer(),
-      body: _screens[_currentIndex],
+      body: Builder(
+        builder: (context) {
+          final List<Widget> screens = [
+            HomeLiveResultsScreen(onOpenDrawer: () => Scaffold.of(context).openDrawer()),
+            GameMarketsListScreen(),
+            CombinedAllMarketsChartScreen(),
+            WalletScreen(),
+          ];
+          return screens[_currentIndex];
+        },
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: const Color(0xFFF59E0B),
@@ -1015,8 +986,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ----------------- 5. HOME SCREEN -----------------
+// ----------------- 5. HOME SCREEN (TOP LEFT PHOTO / 3-DOTS OPENS MENU) -----------------
 class HomeLiveResultsScreen extends StatefulWidget {
+  final VoidCallback onOpenDrawer;
+  HomeLiveResultsScreen({required this.onOpenDrawer});
+
   @override
   _HomeLiveResultsScreenState createState() => _HomeLiveResultsScreenState();
 }
@@ -1042,239 +1016,232 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
   Widget build(BuildContext context) {
     bool isMonthEnd = isMonthEndToday();
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                border: Border(bottom: BorderSide(color: Colors.amber.withOpacity(0.3))),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Builder(
-                    builder: (innerContext) => GestureDetector(
-                      onTap: () {
-                        Scaffold.of(innerContext).openDrawer();
-                      },
-                      child: Row(
-                        children: [
-                          Stack(
-                            alignment: Alignment.bottomRight,
-                            children: [
-                              const CircleAvatar(
-                                radius: 22,
-                                backgroundColor: Color(0xFFF59E0B),
-                                child: Icon(Icons.person, color: Color(0xFF0F172A), size: 26),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(color: Color(0xFF0F172A), shape: BoxShape.circle),
-                                child: const Icon(Icons.menu, size: 12, color: Colors.amber),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(currentLoggedInUserName.isEmpty ? "User" : currentLoggedInUserName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                              Text("+91 $currentLoggedInUserMobile", style: const TextStyle(fontSize: 12, color: Colors.amberAccent, fontWeight: FontWeight.w500)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Row(
+    return SafeArea(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B),
+              border: Border(bottom: BorderSide(color: Colors.amber.withOpacity(0.3))),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                InkWell(
+                  onTap: widget.onOpenDrawer,
+                  child: Row(
                     children: [
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).snapshots(),
-                        builder: (context, snapshot) {
-                          double totalBal = 0.0;
-                          if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
-                            var d = snapshot.data!.data() as Map<String, dynamic>?;
-                            var balMap = extractUserBalances(d);
-                            totalBal = balMap['total'] ?? 0.0;
-                          }
-
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0F172A),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.amber.withOpacity(0.4)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                const Text("Wallet", style: TextStyle(color: Colors.white54, fontSize: 10)),
-                                Text("₹ ${totalBal.toStringAsFixed(2)}", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 14)),
-                              ],
-                            ),
-                          );
-                        },
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.menu, color: Colors.amber, size: 24),
                       ),
                       const SizedBox(width: 8),
-                      InkWell(
-                        onTap: () => openWhatsAppChat(message: "Namaste DisawarKing Support! Meri ID: $currentLoggedInUserMobile"),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(color: Color(0xFF25D366), shape: BoxShape.circle),
-                          child: const Icon(Icons.chat, color: Colors.white, size: 20),
-                        ),
+                      const CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Color(0xFFF59E0B),
+                        child: Icon(Icons.person, color: Color(0xFF0F172A), size: 22),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(currentLoggedInUserName.isEmpty ? "User" : currentLoggedInUserName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                          Text("+91 $currentLoggedInUserMobile", style: const TextStyle(fontSize: 11, color: Colors.amberAccent, fontWeight: FontWeight.w500)),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('results').snapshots(),
-                builder: (context, snapshot) {
-                  Map<String, String> liveResults = {};
-                  if (snapshot.hasData) {
-                    for (var doc in snapshot.data!.docs) {
-                      liveResults[doc.id] = doc['number']?.toString() ?? "--";
-                    }
-                  }
+                ),
+                Row(
+                  children: [
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).snapshots(),
+                      builder: (context, snapshot) {
+                        double totalBal = 0.0;
+                        if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
+                          var d = snapshot.data!.data() as Map<String, dynamic>?;
+                          var balMap = extractUserBalances(d);
+                          totalBal = balMap['total'] ?? 0.0;
+                        }
 
-                  return ListView(
-                    padding: const EdgeInsets.all(12),
-                    children: [
-                      if (dynamicNoticeText.isNotEmpty)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.15),
+                            color: const Color(0xFF0F172A),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.amber),
+                            border: Border.all(color: Colors.amber.withOpacity(0.4)),
                           ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const Icon(Icons.campaign, color: Colors.amber, size: 24),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  dynamicNoticeText,
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
-                                ),
-                              ),
+                              const Text("Wallet", style: TextStyle(color: Colors.white54, fontSize: 9)),
+                              Text("₹ ${totalBal.toStringAsFixed(2)}", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 13)),
                             ],
                           ),
-                        ),
-                      if (dynamicEmergencyLock)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.orangeAccent),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.build, color: Colors.orangeAccent, size: 24),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  "⚠️ सिस्टम मेंटेनेंस मोड में है। कुछ समय के लिए नई बिड बंद कर दी गई हैं।",
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (isMonthEnd)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.redAccent),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.event_busy, color: Colors.redAccent, size: 28),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  "⚠️ आज महीने का अंतिम दिन (Month End) है। सभी बाज़ार बंद हैं। कोई नई बाज़ी नहीं लगेगी।",
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: () => openWhatsAppChat(message: "Namaste DisawarKing Support! Meri ID: $currentLoggedInUserMobile"),
+                      child: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: const BoxDecoration(color: Color(0xFF25D366), shape: BoxShape.circle),
+                        child: const Icon(Icons.chat, color: Colors.white, size: 18),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('results').snapshots(),
+              builder: (context, snapshot) {
+                Map<String, String> liveResults = {};
+                if (snapshot.hasData) {
+                  for (var doc in snapshot.data!.docs) {
+                    liveResults[doc.id] = doc['number']?.toString() ?? "--";
+                  }
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.all(12),
+                  children: [
+                    if (dynamicNoticeText.isNotEmpty)
                       Container(
-                        padding: const EdgeInsets.all(14),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF312E81), Color(0xFF1E293B)]),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                          color: Colors.amber.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber),
                         ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Row(
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("DISAWAR KING LIVE RESULTS", style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 14)),
-                                SizedBox(height: 4),
-                                Text("Taaza parinam & Live Updates", style: TextStyle(color: Colors.white70, fontSize: 11)),
-                              ],
+                            const Icon(Icons.campaign, color: Colors.amber, size: 24),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                dynamicNoticeText,
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
+                              ),
                             ),
-                            Icon(Icons.flash_on, color: Color(0xFFF59E0B), size: 30),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      const Text("Aaj Ka Live Result", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white70)),
-                      const SizedBox(height: 8),
-                      ...appMarkets.map((market) {
-                        String resultNum = liveResults[market.name] ?? "XX";
-                        String remainingStr = market.getRemainingTimeStr();
-
-                        return Card(
-                          color: const Color(0xFF1E293B),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            title: Text("${market.hindiName} (${market.name})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                            subtitle: Text(
-                              remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode"
-                                  ? "Result: ${market.resultTimeStr} | स्थिति: $remainingStr"
-                                  : "Result Time: ${market.resultTimeStr} | Time Left: $remainingStr",
-                              style: TextStyle(
-                                color: (remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode") ? Colors.redAccent : Colors.white54,
-                                fontSize: 11,
-                                fontWeight: (remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode") ? FontWeight.bold : FontWeight.normal,
+                    if (dynamicEmergencyLock)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orangeAccent),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.build, color: Colors.orangeAccent, size: 24),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                "⚠️ सिस्टम मेंटेनेंस मोड में है। कुछ समय के लिए नई बिड बंद कर दी गई हैं।",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                               ),
                             ),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF59E0B),
-                                borderRadius: BorderRadius.circular(8),
+                          ],
+                        ),
+                      ),
+                    if (isMonthEnd)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.redAccent),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.event_busy, color: Colors.redAccent, size: 28),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                "⚠️ आज महीने का अंतिम दिन (Month End) है। सभी बाज़ार बंद हैं। कोई नई बाज़ी नहीं लगेगी।",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                               ),
-                              child: Text(resultNum, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                            ),
+                          ],
+                        ),
+                      ),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [Color(0xFF312E81), Color(0xFF1E293B)]),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("DISAWAR KING LIVE RESULTS", style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 14)),
+                              SizedBox(height: 4),
+                              Text("Taaza parinam & Live Updates", style: TextStyle(color: Colors.white70, fontSize: 11)),
+                            ],
+                          ),
+                          Icon(Icons.flash_on, color: Color(0xFFF59E0B), size: 30),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text("Aaj Ka Live Result", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white70)),
+                    const SizedBox(height: 8),
+                    ...appMarkets.map((market) {
+                      String resultNum = liveResults[market.name] ?? "XX";
+                      String remainingStr = market.getRemainingTimeStr();
+
+                      return Card(
+                        color: const Color(0xFF1E293B),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          title: Text("${market.hindiName} (${market.name})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                          subtitle: Text(
+                            remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode"
+                                ? "Result: ${market.resultTimeStr} | स्थिति: $remainingStr"
+                                : "Result Time: ${market.resultTimeStr} | Time Left: $remainingStr",
+                            style: TextStyle(
+                              color: (remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode") ? Colors.redAccent : Colors.white54,
+                              fontSize: 11,
+                              fontWeight: (remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode") ? FontWeight.bold : FontWeight.normal,
                             ),
                           ),
-                        );
-                      }),
-                    ],
-                  );
-                },
-              ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF59E0B),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(resultNum, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2052,7 +2019,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   }
 }
 
-// ----------------- 11. MONTH-WISE MASTER CHART SCREEN -----------------
+// ----------------- 11. MONTH-WISE ALL-IN-ONE MASTER CHART SCREEN -----------------
 class CombinedAllMarketsChartScreen extends StatefulWidget {
   @override
   _CombinedAllMarketsChartScreenState createState() => _CombinedAllMarketsChartScreenState();
@@ -2065,6 +2032,7 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
   void initState() {
     super.initState();
     DateTime now = DateTime.now();
+    // Default current month (10-2026) select hoga
     selectedMonthYear = "${now.month.toString().padLeft(2, '0')}-${now.year}";
   }
 
@@ -2079,16 +2047,22 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("DisawarKing Master Chart"),
+        title: const Text("DisawarKing Calendar"),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.withOpacity(0.5)),
+            ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 dropdownColor: const Color(0xFF1E293B),
                 value: selectedMonthYear,
-                style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
-                icon: const Icon(Icons.calendar_month, color: Colors.amber, size: 20),
+                style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12),
+                icon: const Icon(Icons.calendar_month, color: Colors.amber, size: 18),
                 items: monthOptions.map((String m) {
                   return DropdownMenuItem<String>(
                     value: m,
@@ -2121,7 +2095,13 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
               String number = data['number'] ?? 'XX';
               String monthYear = data['monthYear'] ?? "";
 
-              if (monthYear.isNotEmpty && monthYear != selectedMonthYear) {
+              // Agar doc me monthYear missing hai toh purana September (09-2026) data maano
+              if (monthYear.isEmpty) {
+                monthYear = "09-2026";
+              }
+
+              // Sirf selected month ka hi data dikhega
+              if (monthYear != selectedMonthYear) {
                 continue;
               }
 
@@ -2145,7 +2125,18 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
 
           if (dates.isEmpty) {
             return Center(
-              child: Text("Month ($selectedMonthYear) me Chart ka koi record nahi hai.", style: const TextStyle(color: Colors.white54, fontSize: 14)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.event_note, color: Colors.white24, size: 55),
+                  const SizedBox(height: 10),
+                  Text("Month $selectedMonthYear ka Chart Abhi Khali Hai.", style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 6),
+                  const Text("Jaise hi naya result declare hoga, wo yahan tarikh-wise show hoga.", style: TextStyle(color: Colors.white54, fontSize: 12), textAlign: TextAlign.center),
+                  const SizedBox(height: 14),
+                  const Text("(Pichhla September ka record dekhne ke liye upar month dropdown badlein)", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                ],
+              ),
             );
           }
 
@@ -2843,7 +2834,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
 
         void addEntry(String market, String num) {
           if (num.isNotEmpty) {
-            var docRef = historyCol.doc("2026-09_${dt}_$market");
+            var docRef = historyCol.doc("09-2026_${dt}_$market");
             batch.set(docRef, {
               'market': market,
               'number': num,
@@ -2865,7 +2856,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
       await batch.commit();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(backgroundColor: Colors.green, content: Text("29 Dinon Ka Pura Chart Upload Ho Gaya!")),
+        const SnackBar(backgroundColor: Colors.green, content: Text("September 29 Dinon Ka Pura Chart Upload Ho Gaya!")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
@@ -2884,7 +2875,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
   }
 
   void _clearWrongDateResult(BuildContext context, String marketName) {
-    final TextEditingController dateCtrl = TextEditingController(text: "30");
+    final TextEditingController dateCtrl = TextEditingController(text: "01");
 
     showDialog(
       context: context,
@@ -2895,7 +2886,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              "Jis tarikh me se result hatana hai, wo tarikh dalein. Us mahine ke chart se wo entry delete ho jayegi.",
+              "Jis tarikh me se result hatana hai, wo tarikh dalein. Chart se wo entry delete ho jayegi.",
               style: TextStyle(color: Colors.white70, fontSize: 13),
             ),
             const SizedBox(height: 14),
@@ -2905,7 +2896,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
               maxLength: 2,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.amber),
-              decoration: const InputDecoration(labelText: "Tarikh (Jaise: 30)", border: OutlineInputBorder(), counterText: ""),
+              decoration: const InputDecoration(labelText: "Tarikh (Jaise: 01)", border: OutlineInputBorder(), counterText: ""),
             ),
           ],
         ),
@@ -2934,7 +2925,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                 }
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(backgroundColor: Colors.green, content: Text("$marketName ki Tarikh $dt wali entry safalta se hata di gayi!")),
+                  SnackBar(backgroundColor: Colors.green, content: Text("$marketName ki Tarikh $dt wali entry hata di gayi!")),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
@@ -3047,6 +3038,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           'wasCorrected': isReDeclaration,
                         });
 
+                        // Naya Month-Wise Record (01-10-2026)
                         await firestore.collection('results_history').doc("${curMonthYear}_${chosenDate}_$marketName").set({
                           'market': marketName,
                           'number': result,
@@ -3201,7 +3193,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             backgroundColor: Colors.green,
-                            content: Text("$marketName Result Tarikh $chosenDate par '$result' Update Ho Gaya! ($winnersCount Winners)"),
+                            content: Text("$marketName Result Tarikh $chosenDate ($curMonthYear) par '$result' Update Ho Gaya! ($winnersCount Winners)"),
                           ),
                         );
                       } catch (e) {
@@ -3268,7 +3260,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
                       : const Icon(Icons.cloud_upload, color: Colors.black, size: 26),
                   label: Text(
-                    _isImporting ? "UPLOADING CHART DATA..." : "ONE-CLICK UPLOAD 29-DAY CHART DATA",
+                    _isImporting ? "UPLOADING CHART DATA..." : "ONE-CLICK UPLOAD 29-DAY SEPTEMBER CHART",
                     style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                   onPressed: _isImporting ? null : _importPastChartData,
