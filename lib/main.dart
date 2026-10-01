@@ -37,16 +37,16 @@ class DisawarKingApp extends StatelessWidget {
       title: 'DisawarKingApp',
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
+        scaffoldBackgroundColor: const Color(0xFF090D16),
         primaryColor: const Color(0xFFF59E0B),
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFFF59E0B),
           secondary: Color(0xFFD97706),
-          surface: Color(0xFF1E293B),
+          surface: Color(0xFF131B2E),
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E293B),
-          elevation: 2,
+          backgroundColor: Color(0xFF131B2E),
+          elevation: 3,
           centerTitle: true,
           titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFF59E0B)),
           iconTheme: IconThemeData(color: Color(0xFFF59E0B)),
@@ -61,12 +61,8 @@ class DisawarKingApp extends StatelessWidget {
 String currentLoggedInUserMobile = "";
 String currentLoggedInUserName = "";
 
-// STRICT ADMIN NUMBERS (Only these two numbers can see Admin Panel)
 final List<String> authorizedAdmins = ["9761630128", "7409989270"];
-
-bool get isCurrentUserAdmin {
-  return authorizedAdmins.contains(currentLoggedInUserMobile.trim());
-}
+bool get isCurrentUserAdmin => authorizedAdmins.contains(currentLoggedInUserMobile.trim());
 
 String dynamicWhatsAppNumber = "917409989270";
 String dynamicUpiId = "9761630128@ybl";
@@ -74,7 +70,7 @@ String dynamicNoticeText = "";
 bool dynamicEmergencyLock = false;
 String dynamicLatestApkUrl = "";
 String dynamicTermsText = "• जोड़ी रेट: 10 का 900 ₹ | हरूफ रेट: 10 का 90 ₹।\n"
-    "• अंतिम 2 घंटे में प्रति जोड़ी अधिकतम ₹200 की सीमा लागू होगी।\n"
+    "• अंतिम 90 मिनट में प्रति जोड़ी अधिकतम ₹200 की सीमा लागू होगी।\n"
     "• महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं।\n"
     "• कम से कम पैसे जोड़ें (Add Money): ₹50\n"
     "• कम से कम निकासी (Withdrawal): ₹500\n"
@@ -172,10 +168,10 @@ class MarketConfig {
     return now.isBefore(getCloseDateTime());
   }
 
-  bool isWithin2Hours() {
+  bool isWithin90Minutes() {
     if (!isOpen()) return false;
     Duration diff = getCloseDateTime().difference(DateTime.now());
-    return diff.inMinutes > 0 && diff.inMinutes <= 120;
+    return diff.inMinutes > 0 && diff.inMinutes <= 90;
   }
 
   String getRemainingTimeStr() {
@@ -227,7 +223,7 @@ Widget buildAppLogo() {
             end: Alignment.bottomRight,
           ),
           boxShadow: [
-            BoxShadow(color: Colors.amber.withOpacity(0.3), blurRadius: 18, spreadRadius: 2),
+            BoxShadow(color: Colors.amber.withOpacity(0.4), blurRadius: 20, spreadRadius: 3),
           ],
         ),
         child: const Icon(Icons.workspace_premium, size: 50, color: Color(0xFF0F172A)),
@@ -392,9 +388,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 Container(
                   padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
+                    color: const Color(0xFF131B2E),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.amber.withOpacity(0.25)),
+                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -411,7 +407,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           hintText: "Mobile Number",
                           counterText: "",
                           filled: true,
-                          fillColor: const Color(0xFF0F172A),
+                          fillColor: const Color(0xFF090D16),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
@@ -423,7 +419,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: const Icon(Icons.lock_outline, color: Colors.amber),
                           hintText: "Password",
                           filled: true,
-                          fillColor: const Color(0xFF0F172A),
+                          fillColor: const Color(0xFF090D16),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
@@ -549,7 +545,7 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
+          backgroundColor: const Color(0xFF131B2E),
           title: const Text("Success", style: TextStyle(color: Colors.amber)),
           content: Text("Account ban gaya!\nMobile: $mobile\nAb Login karein.", style: const TextStyle(color: Colors.white70)),
           actions: [
@@ -580,9 +576,9 @@ class _DirectRegisterScreenState extends State<DirectRegisterScreen> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: const Color(0xFF131B2E),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.amber.withOpacity(0.2)),
+            border: Border.all(color: Colors.amber.withOpacity(0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -724,7 +720,7 @@ class _DirectResetPasswordScreenState extends State<DirectResetPasswordScreen> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: const Color(0xFF131B2E),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.amber.withOpacity(0.2)),
           ),
@@ -807,12 +803,12 @@ class AppSideNavigationDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: const Color(0xFF1E293B),
+      backgroundColor: const Color(0xFF0F172A),
       child: Column(
         children: [
           UserAccountsDrawerHeader(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: [Color(0xFF312E81), Color(0xFF1E293B)]),
+              gradient: LinearGradient(colors: [Color(0xFF1E1B4B), Color(0xFF0F172A)]),
             ),
             currentAccountPicture: const CircleAvatar(
               backgroundColor: Color(0xFFF59E0B),
@@ -831,20 +827,21 @@ class AppSideNavigationDrawer extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                // STRICT SECURITY: Button ONLY for 9761630128 and 7409989270
                 if (isCurrentUserAdmin)
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.amber, width: 2),
+                      gradient: const LinearGradient(colors: [Color(0xFF78350F), Color(0xFFB45309)]),
                       borderRadius: BorderRadius.circular(10),
-                      color: Colors.amber.withOpacity(0.15),
+                      boxShadow: [
+                        BoxShadow(color: Colors.amber.withOpacity(0.3), blurRadius: 8, spreadRadius: 1),
+                      ],
                     ),
                     child: ListTile(
-                      leading: const Icon(Icons.admin_panel_settings, color: Colors.amber, size: 30),
-                      title: const Text("MASTER ADMIN PANEL", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: const Text("Results, Bets, Timings Control", style: TextStyle(color: Colors.white60, fontSize: 11)),
-                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber, size: 14),
+                      leading: const Icon(Icons.admin_panel_settings, color: Colors.amberAccent, size: 30),
+                      title: const Text("MASTER ADMIN PANEL", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text("Results, Bets, Timings Control", style: TextStyle(color: Colors.white70, fontSize: 11)),
+                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
                       onTap: () {
                         Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (c) => MasterAdminPanelScreen()));
@@ -980,8 +977,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: const Color(0xFFF59E0B),
-        unselectedItemColor: Colors.white60,
-        backgroundColor: const Color(0xFF1E293B),
+        unselectedItemColor: Colors.white54,
+        backgroundColor: const Color(0xFF0F172A),
         type: BottomNavigationBarType.fixed,
         onTap: (index) => setState(() => _currentIndex = index),
         items: const [
@@ -995,7 +992,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ----------------- 5. HOME SCREEN (ONLY TODAY'S RESULT SHOWN - ELSE WAITING...) -----------------
+// ----------------- 5. HOME SCREEN (ATTRACTIVE VIP THEME - TIME LEFT REMOVED) -----------------
 class HomeLiveResultsScreen extends StatefulWidget {
   final VoidCallback onOpenDrawer;
   HomeLiveResultsScreen({required this.onOpenDrawer});
@@ -1031,10 +1028,10 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
-              border: Border(bottom: BorderSide(color: Colors.amber.withOpacity(0.3))),
+              color: const Color(0xFF0F172A),
+              border: Border(bottom: BorderSide(color: Colors.amber.withOpacity(0.3), width: 1.2)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1044,25 +1041,26 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
                           color: Colors.amber.withOpacity(0.15),
                           shape: BoxShape.circle,
+                          border: Border.all(color: Colors.amber.withOpacity(0.4)),
                         ),
-                        child: const Icon(Icons.menu, color: Colors.amber, size: 24),
+                        child: const Icon(Icons.menu, color: Colors.amber, size: 22),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       const CircleAvatar(
-                        radius: 18,
+                        radius: 19,
                         backgroundColor: Color(0xFFF59E0B),
-                        child: Icon(Icons.person, color: Color(0xFF0F172A), size: 22),
+                        child: Icon(Icons.person, color: Color(0xFF0F172A), size: 24),
                       ),
                       const SizedBox(width: 8),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(currentLoggedInUserName.isEmpty ? "User" : currentLoggedInUserName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
-                          Text("+91 $currentLoggedInUserMobile", style: const TextStyle(fontSize: 11, color: Colors.amberAccent, fontWeight: FontWeight.w500)),
+                          Text(currentLoggedInUserName.isEmpty ? "User" : currentLoggedInUserName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                          Text("+91 $currentLoggedInUserMobile", style: const TextStyle(fontSize: 11, color: Colors.amberAccent, fontWeight: FontWeight.w600)),
                         ],
                       ),
                     ],
@@ -1081,17 +1079,20 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                         }
 
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                            color: const Color(0xFF1E293B),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                            boxShadow: [
+                              BoxShadow(color: Colors.amber.withOpacity(0.15), blurRadius: 6),
+                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const Text("Wallet", style: TextStyle(color: Colors.white54, fontSize: 9)),
-                              Text("₹ ${totalBal.toStringAsFixed(2)}", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 13)),
+                              const Text("Wallet", style: TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold)),
+                              Text("₹ ${totalBal.toStringAsFixed(2)}", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 14)),
                             ],
                           ),
                         );
@@ -1101,9 +1102,12 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                     InkWell(
                       onTap: () => openWhatsAppChat(message: "Namaste DisawarKing Support! Meri ID: $currentLoggedInUserMobile"),
                       child: Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: const BoxDecoration(color: Color(0xFF25D366), shape: BoxShape.circle),
-                        child: const Icon(Icons.chat, color: Colors.white, size: 18),
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF25D366),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.chat, color: Colors.white, size: 20),
                       ),
                     ),
                   ],
@@ -1131,8 +1135,8 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
+                          gradient: LinearGradient(colors: [Colors.amber.withOpacity(0.25), const Color(0xFF1E293B)]),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: Colors.amber),
                         ),
                         child: Row(
@@ -1195,9 +1199,16 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [Color(0xFF312E81), Color(0xFF1E293B)]),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF312E81), Color(0xFF1E1B4B), Color(0xFF0F172A)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                        border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                        boxShadow: [
+                          BoxShadow(color: Colors.indigo.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 3)),
+                        ],
                       ),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1205,62 +1216,110 @@ class _HomeLiveResultsScreenState extends State<HomeLiveResultsScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("DISAWAR KING LIVE RESULTS", style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text("DISAWAR KING LIVE RESULTS", style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 0.5)),
                               SizedBox(height: 4),
-                              Text("Taaza parinam & Live Updates", style: TextStyle(color: Colors.white70, fontSize: 11)),
+                              Text("Taaza Parinam & Fastest Results", style: TextStyle(color: Colors.white70, fontSize: 11)),
                             ],
                           ),
-                          Icon(Icons.flash_on, color: Color(0xFFF59E0B), size: 30),
+                          Icon(Icons.bolt, color: Color(0xFFF59E0B), size: 34),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text("Aaj Ka Live Result", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white70)),
+                    const SizedBox(height: 14),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4),
+                      child: Text("Aaj Ka Live Result", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
+                    ),
                     const SizedBox(height: 8),
                     ...appMarkets.map((market) {
                       var docData = liveResults[market.name];
                       String savedDate = docData?['date']?.toString() ?? "";
                       String savedNum = docData?['number']?.toString() ?? "";
 
-                      // Check: Sirf tab dikhega agar aaj ki date me declare hua ho!
                       String displayNum = "Wait...";
                       bool isDeclaredToday = (savedDate == todayDateStr && savedNum.isNotEmpty && savedNum != "XX");
                       if (isDeclaredToday) {
                         displayNum = savedNum;
                       }
 
-                      String remainingStr = market.getRemainingTimeStr();
-
-                      return Card(
-                        color: const Color(0xFF1E293B),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          title: Text("${market.hindiName} (${market.name})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                          subtitle: Text(
-                            remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode"
-                                ? "Result: ${market.resultTimeStr} | स्थिति: $remainingStr"
-                                : "Result Time: ${market.resultTimeStr} | Time Left: $remainingStr",
-                            style: TextStyle(
-                              color: (remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode") ? Colors.redAccent : Colors.white54,
-                              fontSize: 11,
-                              fontWeight: (remainingStr == "Month End Closed" || remainingStr == "Maintenance Mode") ? FontWeight.bold : FontWeight.normal,
-                            ),
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF161F33), Color(0xFF0F172A)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
                           ),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isDeclaredToday ? const Color(0xFFF59E0B) : Colors.white10,
-                              borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDeclaredToday ? Colors.amber.withOpacity(0.8) : Colors.white12,
+                            width: isDeclaredToday ? 1.5 : 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDeclaredToday ? Colors.amber.withOpacity(0.2) : Colors.black.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
-                            child: Text(
-                              displayNum,
-                              style: TextStyle(
-                                fontSize: isDeclaredToday ? 18 : 13,
-                                fontWeight: FontWeight.bold,
-                                color: isDeclaredToday ? const Color(0xFF0F172A) : Colors.white60,
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "${market.hindiName} (${market.name})",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: isDeclaredToday ? Colors.amberAccent : Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.access_time, size: 12, color: Colors.white38),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          "Result Time: ${market.resultTimeStr}",
+                                          style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w500),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
+                              Container(
+                                constraints: const BoxConstraints(minWidth: 70),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  gradient: isDeclaredToday
+                                      ? const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFD97706)])
+                                      : const LinearGradient(colors: [Color(0xFF1E293B), Color(0xFF1E293B)]),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isDeclaredToday ? Colors.amberAccent : Colors.white24,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    displayNum,
+                                    style: TextStyle(
+                                      fontSize: isDeclaredToday ? 20 : 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDeclaredToday ? const Color(0xFF0F172A) : Colors.white60,
+                                      letterSpacing: isDeclaredToday ? 1.0 : 0.0,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -1310,12 +1369,12 @@ class _GameMarketsListScreenState extends State<GameMarketsListScreen> {
         itemBuilder: (context, index) {
           final market = appMarkets[index];
           final bool isOpen = market.isOpen();
-          final bool isLast2Hours = market.isWithin2Hours();
+          final bool isLast90Min = market.isWithin90Minutes();
           final String timeLeft = market.getRemainingTimeStr();
 
           return Card(
-            color: const Color(0xFF1E293B),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            color: const Color(0xFF131B2E),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.amber.withOpacity(0.2))),
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -1328,14 +1387,20 @@ class _GameMarketsListScreenState extends State<GameMarketsListScreen> {
                         const SizedBox(height: 4),
                         if (timeLeft != "Month End Closed" && timeLeft != "Maintenance Mode")
                           Text(
-                            "Band hone me: $timeLeft",
+                            "Left Time: $timeLeft",
                             style: TextStyle(color: isOpen ? Colors.greenAccent : Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         Text("Close Time: ${market.closeTimeStr}", style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                        if (isOpen && isLast2Hours)
+                        if (isOpen && isLast90Min)
                           const Padding(
-                            padding: EdgeInsets.only(top: 4),
-                            child: Text("⚠️ Antim 2 Ghante: Max ₹200 Limit", style: TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                            padding: EdgeInsets.only(top: 5),
+                            child: Row(
+                              children: [
+                                Icon(Icons.error_outline, color: Colors.amberAccent, size: 14),
+                                SizedBox(width: 4),
+                                Text("Maximum Limit 200 Only", style: TextStyle(color: Colors.amberAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
                           ),
                       ],
                     ),
@@ -1390,7 +1455,7 @@ class GameModeSelectScreen extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            color: const Color(0xFF1E293B),
+            color: const Color(0xFF131B2E),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -1429,7 +1494,7 @@ class GameModeSelectScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
-        tileColor: const Color(0xFF1E293B),
+        tileColor: const Color(0xFF131B2E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         leading: Icon(icon, color: const Color(0xFFF59E0B)),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
@@ -1488,26 +1553,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
 
   void _submitBids() async {
     if (!widget.market.isOpen()) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
-          title: const Text("बाज़ार बंद है", style: TextStyle(color: Colors.redAccent)),
-          content: Text(
-            isMonthEndToday()
-                ? "महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं। आज कोई बिड नहीं लग सकती।"
-                : (dynamicEmergencyLock ? "सिस्टम मेंटेनेंस की वजह से गेम बंद है।" : "इस बाज़ार का समय समाप्त हो चुका है।"),
-            style: const TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("ठीक है", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-            )
-          ],
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Bazaar Band Hai!")));
       return;
     }
     if (totalAmount <= 0) {
@@ -1515,11 +1561,28 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
       return;
     }
 
-    if (widget.market.isWithin2Hours()) {
+    if (widget.market.isWithin90Minutes()) {
       for (int i = 0; i < 100; i++) {
         int val = int.tryParse(_controllers[i].text) ?? 0;
         if (val > 200) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Antim 2 ghante me max ₹200 limit hai!")));
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF131B2E),
+              title: const Text("Limit Alert", style: TextStyle(color: Colors.amber)),
+              content: const Text(
+                "Maximum Limit 200 Only",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              actions: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("OK", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                )
+              ],
+            ),
+          );
           return;
         }
       }
@@ -1563,7 +1626,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
       for (var c in _controllers) c.clear();
       _calculateTotal();
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Jodi Game Safalta se Lag Gaya!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Jodi Game Lag Gaya!")));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
@@ -1601,7 +1664,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
                   int num = index + 1;
                   String displayNum = num == 100 ? "00" : (num < 10 ? "0$num" : "$num");
                   return Container(
-                    decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white12)),
+                    decoration: BoxDecoration(color: const Color(0xFF131B2E), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white12)),
                     padding: const EdgeInsets.all(4),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1626,7 +1689,7 @@ class _JodiSelectionScreenState extends State<JodiSelectionScreen> {
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: const Color(0xFF0F172A),
+              color: const Color(0xFF090D16),
               child: Row(
                 children: [
                   Expanded(
@@ -1681,29 +1744,25 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
 
   void _submitHarup() async {
     if (!widget.market.isOpen()) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
-          title: const Text("बाज़ार बंद है", style: TextStyle(color: Colors.redAccent)),
-          content: Text(
-            isMonthEndToday()
-                ? "महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं। आज कोई बिड नहीं लग सकती।"
-                : (dynamicEmergencyLock ? "सिस्टम मेंटेनेंस की वजह से गेम बंद है।" : "इस बाज़ार का समय समाप्त हो चुका है।"),
-            style: const TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("ठीक है", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-            )
-          ],
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Bazaar Band Hai!")));
       return;
     }
     if (total <= 0) return;
+
+    if (widget.market.isWithin90Minutes()) {
+      for (var c in _andar) {
+        if ((int.tryParse(c.text) ?? 0) > 200) {
+          _showLimitDialog();
+          return;
+        }
+      }
+      for (var c in _bahar) {
+        if ((int.tryParse(c.text) ?? 0) > 200) {
+          _showLimitDialog();
+          return;
+        }
+      }
+    }
 
     bool success = await deductGamePoints(currentLoggedInUserMobile, total.toDouble());
     if (!success) {
@@ -1753,9 +1812,30 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
     }
   }
 
+  void _showLimitDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF131B2E),
+        title: const Text("Limit Alert", style: TextStyle(color: Colors.amber)),
+        content: const Text(
+          "Maximum Limit 200 Only",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("OK", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          )
+        ],
+      ),
+    );
+  }
+
   Widget _buildBox(String label, List<TextEditingController> list) {
     return Card(
-      color: const Color(0xFF1E293B),
+      color: const Color(0xFF131B2E),
       margin: const EdgeInsets.all(12),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -1770,7 +1850,7 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
               itemCount: 10,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5, childAspectRatio: 1.2, crossAxisSpacing: 6, mainAxisSpacing: 6),
               itemBuilder: (c, i) => Container(
-                decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(color: const Color(0xFF090D16), borderRadius: BorderRadius.circular(6)),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -1805,7 +1885,7 @@ class _HarupSelectionScreenState extends State<HarupSelectionScreen> {
             Expanded(child: ListView(children: [_buildBox("Andar Harup", _andar), _buildBox("Bahar Harup", _bahar)])),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: const Color(0xFF0F172A),
+              color: const Color(0xFF090D16),
               child: Row(
                 children: [
                   Expanded(child: Text("Total: ₹ $total", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 20))),
@@ -1870,26 +1950,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
 
   void _submitCrossingBids() async {
     if (!widget.market.isOpen()) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
-          title: const Text("बाज़ार बंद है", style: TextStyle(color: Colors.redAccent)),
-          content: Text(
-            isMonthEndToday()
-                ? "महीने के अंतिम दिन (Month End) सभी बाज़ार बंद रहते हैं। आज कोई बिड नहीं लग सकती।"
-                : (dynamicEmergencyLock ? "सिस्टम मेंटेनेंस की वजह से गेम बंद है।" : "इस बाज़ार का समय समाप्त हो चुका है।"),
-            style: const TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("ठीक है", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-            )
-          ],
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Bazaar Band Hai!")));
       return;
     }
     if (generatedJodis.isEmpty || calculatedTotalAmount <= 0) {
@@ -1899,8 +1960,25 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
 
     int amountPerJodi = int.tryParse(_amountController.text.trim()) ?? 0;
 
-    if (widget.market.isWithin2Hours() && amountPerJodi > 200) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.redAccent, content: Text("Antim 2 ghante me max ₹200 limit hai!")));
+    if (widget.market.isWithin90Minutes() && amountPerJodi > 200) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF131B2E),
+          title: const Text("Limit Alert", style: TextStyle(color: Colors.amber)),
+          content: const Text(
+            "Maximum Limit 200 Only",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("OK", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            )
+          ],
+        ),
+      );
       return;
     }
 
@@ -1960,7 +2038,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
         child: Column(
           children: [
             Card(
-              color: const Color(0xFF1E293B),
+              color: const Color(0xFF131B2E),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -2005,7 +2083,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.amber.withOpacity(0.3))),
+                decoration: BoxDecoration(color: const Color(0xFF131B2E), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.amber.withOpacity(0.3))),
                 child: Column(
                   children: [
                     Row(
@@ -2021,7 +2099,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
                       runSpacing: 8,
                       children: generatedJodis.map((j) => Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.amber.withOpacity(0.4))),
+                        decoration: BoxDecoration(color: const Color(0xFF090D16), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.amber.withOpacity(0.4))),
                         child: Text(j, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13)),
                       )).toList(),
                     ),
@@ -2048,7 +2126,7 @@ class _CrossingSelectionScreenState extends State<CrossingSelectionScreen> {
   }
 }
 
-// ----------------- 11. CALENDAR TABLE (COMPLETE 1 TO 31 DAYS FORMAT) -----------------
+// ----------------- 11. CALENDAR TABLE (FULL 1 TO 31 DAYS) -----------------
 class CombinedAllMarketsChartScreen extends StatefulWidget {
   @override
   _CombinedAllMarketsChartScreenState createState() => _CombinedAllMarketsChartScreenState();
@@ -2081,13 +2159,13 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
             margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
+              color: const Color(0xFF090D16),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.amber.withOpacity(0.5)),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                dropdownColor: const Color(0xFF1E293B),
+                dropdownColor: const Color(0xFF131B2E),
                 value: selectedMonthYear,
                 style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12),
                 icon: const Icon(Icons.calendar_month, color: Colors.amber, size: 18),
@@ -2135,7 +2213,6 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
             }
           }
 
-          // Full 31 Days Calendar Format Structure (Always Visible!)
           List<String> all31Dates = List.generate(31, (index) => (index + 1).toString().padLeft(2, '0'));
 
           return SingleChildScrollView(
@@ -2145,9 +2222,9 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
               child: DataTable(
                 headingRowHeight: 48,
                 dataRowHeight: 44,
-                headingRowColor: MaterialStateProperty.all(const Color(0xFF1E293B)),
+                headingRowColor: MaterialStateProperty.all(const Color(0xFF131B2E)),
                 dataRowColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-                  return const Color(0xFF0F172A);
+                  return const Color(0xFF090D16);
                 }),
                 border: TableBorder.all(color: Colors.amber.withOpacity(0.3), width: 1),
                 columns: [
@@ -2208,7 +2285,7 @@ class WalletScreen extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF312E81), Color(0xFF1E293B)])),
+              decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF312E81), Color(0xFF131B2E)])),
               child: StreamBuilder<DocumentSnapshot>(
                 stream: FirebaseFirestore.instance.collection('users').doc(currentLoggedInUserMobile).snapshots(),
                 builder: (context, snapshot) {
@@ -2235,7 +2312,7 @@ class WalletScreen extends StatelessWidget {
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white12)),
+                              decoration: BoxDecoration(color: const Color(0xFF090D16), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white12)),
                               child: Column(
                                 children: [
                                   const Text("Deposit Wallet (गेम खेलें)", style: TextStyle(color: Colors.white54, fontSize: 11)),
@@ -2249,7 +2326,7 @@ class WalletScreen extends StatelessWidget {
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.amber.withOpacity(0.4))),
+                              decoration: BoxDecoration(color: const Color(0xFF090D16), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.amber.withOpacity(0.4))),
                               child: Column(
                                 children: [
                                   const Text("Winning Wallet (निकासी)", style: TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold)),
@@ -2418,7 +2495,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
+          backgroundColor: const Color(0xFF131B2E),
           title: const Text("निकासी का समय समाप्त", style: TextStyle(color: Colors.redAccent)),
           content: const Text(
             "निकासी अनुरोध करने का समय केवल सुबह 8:00 AM से दोपहर 2:00 PM तक है।\n\nकृपया सुबह 8:00 AM के बाद प्रयास करें।",
@@ -2446,7 +2523,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
+          backgroundColor: const Color(0xFF131B2E),
           title: const Text("बैंक ट्रांसफर अनिवार्य", style: TextStyle(color: Colors.amber)),
           content: const Text(
             "₹5,000 से ऊपर की राशि केवल बैंक अकाउंट में ही ट्रांसफर की जाएगी।\n\nकृपया 'Bank Transfer' का विकल्प चुनें और अपनी बैंक जानकारी भरें।",
@@ -2501,7 +2578,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            backgroundColor: const Color(0xFF1E293B),
+            backgroundColor: const Color(0xFF131B2E),
             title: const Text("निकासी अस्वीकृत", style: TextStyle(color: Colors.redAccent)),
             content: Text(
               "आप केवल अपनी जीती हुई राशि (Winning Balance: ₹${winBal.toStringAsFixed(2)}) ही निकाल सकते हैं।\n\nडिपॉजिट की गई राशि से गेम खेलें और जीतें!",
@@ -2558,7 +2635,7 @@ class _WithdrawRequestScreenState extends State<WithdrawRequestScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: const Color(0xFF131B2E),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.amber.withOpacity(0.3)),
               ),
@@ -2665,7 +2742,7 @@ class ReferAndEarnScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: const Color(0xFF131B2E),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.amber.withOpacity(0.3)),
               ),
@@ -2678,7 +2755,7 @@ class ReferAndEarnScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A),
+                      color: const Color(0xFF090D16),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.amber),
                     ),
@@ -2854,7 +2931,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
       await batch.commit();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(backgroundColor: Colors.green, content: Text("September 29 Dinon Ka Pura Chart Upload Ho Gaya!")),
+        const SnackBar(backgroundColor: Colors.green, content: Text("September 29 Dinon Ka Pura Chart Wapas Upload Ho Gaya!")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
@@ -2872,66 +2949,79 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
     return now.day.toString().padLeft(2, '0');
   }
 
+  // Safe Month-Wise Delete Function: Purane mahine ka data nahi udega!
   void _clearWrongDateResult(BuildContext context, String marketName) {
-    final TextEditingController dateCtrl = TextEditingController(text: "01");
+    DateTime now = DateTime.now();
+    String deleteMonthYear = "${now.month.toString().padLeft(2, '0')}-${now.year}";
+    final TextEditingController dateCtrl = TextEditingController(text: now.day.toString().padLeft(2, '0'));
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: Text("Galat Entry Hatao: $marketName", style: const TextStyle(color: Colors.redAccent)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "Jis tarikh me se result hatana hai, wo tarikh dalein. Chart se wo entry delete ho jayegi.",
-              style: TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: dateCtrl,
-              keyboardType: TextInputType.number,
-              maxLength: 2,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.amber),
-              decoration: const InputDecoration(labelText: "Tarikh (Jaise: 01)", border: OutlineInputBorder(), counterText: ""),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF131B2E),
+          title: Text("Galat Entry Hatao: $marketName", style: const TextStyle(color: Colors.redAccent)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Jis mahine aur tarikh me se result hatana hai, sirf wahi entry delete hogi:",
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 14),
+              DropdownButtonFormField<String>(
+                value: deleteMonthYear,
+                decoration: const InputDecoration(labelText: "Mahina (Month)", border: OutlineInputBorder()),
+                dropdownColor: const Color(0xFF1E293B),
+                items: ["10-2026", "09-2026"].map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => deleteMonthYear = val);
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: dateCtrl,
+                keyboardType: TextInputType.number,
+                maxLength: 2,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.amber),
+                decoration: const InputDecoration(labelText: "Tarikh (Date: 01)", border: OutlineInputBorder(), counterText: ""),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                String dt = dateCtrl.text.trim();
+                if (dt.isEmpty) return;
+                Navigator.pop(ctx);
+
+                try {
+                  // Specific Month-Wise Document Delete
+                  await FirebaseFirestore.instance.collection('results_history').doc("${deleteMonthYear}_${dt}_$marketName").delete();
+
+                  // Live result tabhi hategi agar wo current date aur month ka ho
+                  var liveDoc = await FirebaseFirestore.instance.collection('results').doc(marketName).get();
+                  if (liveDoc.exists && liveDoc.data()?['date'] == dt) {
+                    await FirebaseFirestore.instance.collection('results').doc(marketName).set({
+                      'number': 'XX',
+                      'date': '',
+                    });
+                  }
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(backgroundColor: Colors.green, content: Text("$marketName ki $deleteMonthYear me Tarikh $dt wali entry hata di gayi!")),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
+                }
+              },
+              child: const Text("HATAO (DELETE)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              String dt = dateCtrl.text.trim();
-              if (dt.isEmpty) return;
-              Navigator.pop(ctx);
-
-              DateTime now = DateTime.now();
-              String curMonthYear = "${now.month.toString().padLeft(2, '0')}-${now.year}";
-
-              try {
-                await FirebaseFirestore.instance.collection('results_history').doc("${curMonthYear}_${dt}_$marketName").delete();
-                await FirebaseFirestore.instance.collection('results_history').doc("${dt}_$marketName").delete();
-
-                var liveDoc = await FirebaseFirestore.instance.collection('results').doc(marketName).get();
-                if (liveDoc.exists && liveDoc.data()?['date'] == dt) {
-                  await FirebaseFirestore.instance.collection('results').doc(marketName).set({
-                    'number': 'XX',
-                    'date': '',
-                  });
-                }
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(backgroundColor: Colors.green, content: Text("$marketName ki Tarikh $dt wali entry hata di gayi!")),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")));
-              }
-            },
-            child: const Text("HATAO (DELETE)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }
@@ -2952,7 +3042,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF1E293B),
+              backgroundColor: const Color(0xFF131B2E),
               title: Text(
                 isReDeclaration ? "CORRECT RESULT: $marketName" : "Result Declare: $marketName",
                 style: TextStyle(color: isReDeclaration ? Colors.orangeAccent : Colors.amber),
@@ -3257,7 +3347,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
                       : const Icon(Icons.cloud_upload, color: Colors.black, size: 26),
                   label: Text(
-                    _isImporting ? "UPLOADING CHART DATA..." : "ONE-CLICK UPLOAD 29-DAY SEPTEMBER CHART",
+                    _isImporting ? "UPLOADING CHART DATA..." : "ONE-CLICK RESTORE SEPTEMBER CHART",
                     style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                   onPressed: _isImporting ? null : _importPastChartData,
@@ -3273,7 +3363,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                     }
 
                     return Card(
-                      color: const Color(0xFF1E293B),
+                      color: const Color(0xFF131B2E),
                       margin: const EdgeInsets.only(bottom: 10),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
@@ -3323,7 +3413,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                 itemBuilder: (ctx, i) {
                   var b = docs[i].data() as Map<String, dynamic>;
                   return Card(
-                    color: const Color(0xFF1E293B),
+                    color: const Color(0xFF131B2E),
                     child: ListTile(
                       title: Text("${b['market']} - ₹${b['amount']}", style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
                       subtitle: Text("User: ${b['userName']} (${b['userMobile']})\nBids: ${b['numbers']}\nStatus: ${b['status']}"),
@@ -3353,7 +3443,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                   String mob = d['userMobile'];
 
                   return Card(
-                    color: const Color(0xFF1E293B),
+                    color: const Color(0xFF131B2E),
                     child: ListTile(
                       title: Text("₹$amt by ${d['userName']} ($mob)", style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
                       subtitle: Text("UTR: ${d['utr']}\nStatus: $status"),
@@ -3422,7 +3512,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                   String time = w['time'] ?? '';
 
                   return Card(
-                    color: const Color(0xFF1E293B),
+                    color: const Color(0xFF131B2E),
                     margin: const EdgeInsets.only(bottom: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     child: Padding(
@@ -3453,7 +3543,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(6)),
+                            decoration: BoxDecoration(color: const Color(0xFF090D16), borderRadius: BorderRadius.circular(6)),
                             child: Text(
                               accountDetails,
                               style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 13),
@@ -3492,7 +3582,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
             padding: const EdgeInsets.all(14),
             children: [
               Card(
-                color: const Color(0xFF1E293B),
+                color: const Color(0xFF131B2E),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -3600,7 +3690,7 @@ class _MasterAdminPanelScreenState extends State<MasterAdminPanelScreen> with Si
   }
 }
 
-// ----------------- 17. MY PLAYED GAME SCREEN -----------------
+// ----------------- 17. MY PLAYED GAME SCREEN (CHRONOLOGICAL DATE SORTING) -----------------
 class MyPlayGameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -3621,16 +3711,31 @@ class MyPlayGameScreen extends StatelessWidget {
 
           var docs = snapshot.data!.docs;
 
+          // Pure chronological sorting: Nayi lagayi hui bet (jaise 2nd tareekh) sabse upar dikhegi, 1st tareekh wali neeche chali jayegi
+          List<QueryDocumentSnapshot> sortedDocs = List.from(docs);
+          sortedDocs.sort((a, b) {
+            var dataA = a.data() as Map<String, dynamic>;
+            var dataB = b.data() as Map<String, dynamic>;
+
+            Timestamp? timeA = dataA['timestamp'] as Timestamp?;
+            Timestamp? timeB = dataB['timestamp'] as Timestamp?;
+
+            if (timeA != null && timeB != null) {
+              return timeB.compareTo(timeA); // Descending order (Latest First)
+            }
+            return 0;
+          });
+
           return ListView.builder(
             padding: const EdgeInsets.all(12),
-            itemCount: docs.length,
+            itemCount: sortedDocs.length,
             itemBuilder: (context, index) {
-              var item = docs[index].data() as Map<String, dynamic>;
+              var item = sortedDocs[index].data() as Map<String, dynamic>;
               String status = item['status'] ?? 'Pending';
               Color stColor = status.contains('Won') ? Colors.greenAccent : (status == 'Lost' ? Colors.redAccent : Colors.amber);
 
               return Card(
-                color: const Color(0xFF1E293B),
+                color: const Color(0xFF131B2E),
                 margin: const EdgeInsets.only(bottom: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 child: Padding(
@@ -3688,17 +3793,31 @@ class WithdrawalListScreen extends StatelessWidget {
 
           var docs = snapshot.data!.docs;
 
+          List<QueryDocumentSnapshot> sortedDocs = List.from(docs);
+          sortedDocs.sort((a, b) {
+            var dataA = a.data() as Map<String, dynamic>;
+            var dataB = b.data() as Map<String, dynamic>;
+
+            Timestamp? timeA = dataA['timestamp'] as Timestamp?;
+            Timestamp? timeB = dataB['timestamp'] as Timestamp?;
+
+            if (timeA != null && timeB != null) {
+              return timeB.compareTo(timeA);
+            }
+            return 0;
+          });
+
           return ListView.builder(
             padding: const EdgeInsets.all(12),
-            itemCount: docs.length,
+            itemCount: sortedDocs.length,
             itemBuilder: (context, index) {
-              var item = docs[index].data() as Map<String, dynamic>;
+              var item = sortedDocs[index].data() as Map<String, dynamic>;
               String m = item['method'] ?? 'Transfer';
               String st = item['status'] ?? 'Pending';
               Color stCol = st == "Paid" ? Colors.greenAccent : Colors.amber;
 
               return Card(
-                color: const Color(0xFF1E293B),
+                color: const Color(0xFF131B2E),
                 child: ListTile(
                   title: Text("₹ ${item['amount'] ?? 0} ($m)", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 16)),
                   subtitle: Text("Details: ${item['account'] ?? ''}\nStatus: $st", style: TextStyle(color: stCol)),
