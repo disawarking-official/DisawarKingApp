@@ -2192,6 +2192,9 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
 
   // 1. Year Selector & 2-Column x 6-Row Months Grid
   Widget _buildYearAndMonthsGrid() {
+    // Current date is October 2026 -> so max clickable month in 2026 is 10
+    const int maxClickableMonthIn2026 = 10;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -2247,26 +2250,49 @@ class _CombinedAllMarketsChartScreenState extends State<CombinedAllMarketsChartS
             ),
             itemBuilder: (context, index) {
               final m = monthsList[index];
+              int mNum = int.parse(m["num"]!);
+              bool isFutureMonth = (selectedYear == "2026" && mNum > maxClickableMonthIn2026);
+
               return InkWell(
-                onTap: () {
-                  setState(() {
-                    selectedMonthNum = m["num"];
-                    selectedMonthName = m["name"]!;
-                  });
-                },
+                onTap: isFutureMonth
+                    ? null
+                    : () {
+                        setState(() {
+                          selectedMonthNum = m["num"];
+                          selectedMonthName = m["name"]!;
+                        });
+                      },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF131B2E),
+                    color: isFutureMonth ? const Color(0xFF090D16) : const Color(0xFF131B2E),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
-                    ],
+                    border: Border.all(
+                      color: isFutureMonth ? Colors.white10 : Colors.amber.withOpacity(0.3),
+                    ),
+                    boxShadow: isFutureMonth
+                        ? []
+                        : [
+                            BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
+                          ],
                   ),
                   alignment: Alignment.center,
-                  child: Text(
-                    m["name"]!,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        m["name"]!,
+                        style: TextStyle(
+                          color: isFutureMonth ? Colors.white24 : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      if (isFutureMonth)
+                        const Text(
+                          "Coming Soon",
+                          style: TextStyle(color: Colors.white24, fontSize: 10),
+                        ),
+                    ],
                   ),
                 ),
               );
